@@ -77,7 +77,7 @@
 
     - name: Upgrade to Debian 11 (apt-get dist-upgrade)
       apt:
-        upgrade: dist
+        upgrade: full
 
 # 8 - Reboot the Linux system so that you can boot into Debian 11 Bullseye
 
