@@ -1,0 +1,57 @@
+
+- name: Make sure folder_1_mount directory exists on client
+  file:
+    path: "{{ folder_1_mount }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  when: folder_1_comment | length == 0
+
+- name: Make sure folder_2_mount directory exists on client
+  file:
+    path: "{{ folder_2_mount }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  when: folder_2_comment | length == 0
+
+- name: Make sure folder_3_mount directory exists on client
+  file:
+    path: "{{ folder_3_mount }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  when: folder_3_comment | length == 0
+
+- name: Install necessary utils on wireguard client
+  apt:
+    pkg:
+     - gpg
+
+- name: Update repositories and all packages on target machine
+  apt:
+    name: "*"
+    update_cache: yes
+
+- name: Install moosefs-client on wireguard client
+  apt:
+    pkg:
+     - moosefs-client
+
+- name: Create fstab entry on client
+  blockinfile:
+    path: /etc/fstab
+    create: yes
+    block: |
+      {{ folder_1_comment }}mfsmount {{ folder_1_mount }} fuse mfsmaster=ivysaur,_netdev,noexec,rw,mfssubfolder={{ folder_1_mfs }}  0 0
+      {{ folder_2_comment }}mfsmount {{ folder_2_mount }} fuse mfsmaster=ivysaur,_netdev,noexec,rw,mfssubfolder={{ folder_2_mfs }}  0 0
+      {{ folder_2_comment }}mfsmount {{ folder_3_mount }} fuse mfsmaster=ivysaur,_netdev,noexec,rw,mfssubfolder={{ folder_3_mfs }}  0 0
+
+- name: Mount all entries in fstab
+  command: mount -a
+  args:
+    warn: no
+

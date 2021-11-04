@@ -1,0 +1,16 @@
+---
+
+- name: Record the public SSH key into a variable
+  shell: cat /etc/wireguard/wg0/client-public_{{ item.1 }}.key
+  register: "client_public_key"
+
+- name: Create wireguard config file on server
+  blockinfile:
+    path: /etc/wireguard/wg0/config
+    create: yes
+    marker_begin: "{{ item.1 }} START"
+    marker_end: "{{ item.1 }} END"
+    block: |
+      [Peer]
+      PublicKey = {{ client_public_key.stdout }}
+      AllowedIPs = 192.168.99.{{ item.0 | int + 2 }}/32

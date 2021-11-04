@@ -1,0 +1,7 @@
+
+# WireGuard Server Settings
+server_wg_port: 51280
+client_hostnames: ["wg-client-1", "wg-client-2", "wg-client-3"]
+
+# Local Server Proxy
+proxied_server_ip : 192.168.1.100

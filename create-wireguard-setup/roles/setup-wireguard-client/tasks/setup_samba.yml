@@ -1,0 +1,44 @@
+---
+
+- name: Update repositories and all packages on target machine
+  apt:
+    name: "*"
+    update_cache: yes
+
+- name: Install SAMBA and UFW on wireguard client
+  apt:
+    pkg:
+     - ufw
+     - samba
+     - samba-common-bin
+
+- name: Allow SAMBA related ports in UFW
+  command: ufw allow samba
+
+#sudo systemctl start smbd nmbd
+
+- name: Start service smbd, if not started
+  service:
+    name: smbd
+    state: started
+
+- name: Start service nmbd, if not started
+  service:
+    name: nmbd
+    state: started
+
+# sudo nano /etc/samba/smb.conf
+
+- name: Create fstab entry on client
+  blockinfile:
+    path: /etc/fstab
+    create: yes
+    block: |
+      [{{ organisation_name }}]
+
+      comment = needs username and password to access
+      path = /mnt/GoMatrixHosting/
+      browseable = yes
+      guest ok = no
+      writable = yes
+      valid users = @samba, @{{ samba_user }}

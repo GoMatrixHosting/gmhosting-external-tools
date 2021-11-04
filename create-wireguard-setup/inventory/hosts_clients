@@ -1,0 +1,5 @@
+
+[wireguard_clients]
+wg-client-1 ansible_host=wg-client-1 ansible_ssh_user=root ansible_python_interpreter=/usr/bin/python3
+wg-client-2 ansible_host=wg-client-2 ansible_ssh_user=root ansible_python_interpreter=/usr/bin/python3
+wg-client-3 ansible_host=wg-client-3 ansible_ssh_user=root ansible_python_interpreter=/usr/bin/python3

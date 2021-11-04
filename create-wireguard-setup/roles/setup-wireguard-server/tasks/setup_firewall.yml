@@ -1,0 +1,110 @@
+
+- name: Install necessary packages
+  apt:
+    pkg:
+    - ufw
+
+- name: Allow all access to UDP port 51820 for Wireguard Server
+  ufw:
+    rule: allow
+    port: '51280'
+    proto: udp
+
+- name: Allow all access to TCP port 22 for Wireguard Clients SSH
+  ufw:
+    rule: allow
+    port: '22'
+    proto: tcp
+
+- name: Allow all access to TCP port 9200 for Wireguards Node-Exporter metrics
+  ufw:
+    rule: allow
+    port: '9200'
+    proto: tcp
+
+- name: Allow all access to TCP port 139 for smbd
+  ufw:
+    rule: allow
+    port: '139'
+    proto: tcp
+
+- name: Allow all access to TCP port 445 for smbd
+  ufw:
+    rule: allow
+    port: '445'
+    proto: tcp
+
+- name: Allow all access to UDP port 137 for nmbd
+  ufw:
+    rule: allow
+    port: '137'
+    proto: udp
+
+- name: Allow all access to UDP port 138 for nmbd
+  ufw:
+    rule: allow
+    port: '138'
+    proto: udp
+
+# https://newbedev.com/how-to-enable-ufw-firewall-to-allow-icmp-response
+- name: Allow ICMP responses for ping
+  blockinfile:
+    path: /etc/ufw/before.rules
+    insertbefore: "# don't delete the 'COMMIT' line or these rules won't be processed"
+    marker_begin: "ping BEGIN"
+    marker_end: "ping END"
+    block: |
+      # allow ICMP requests with UFW
+      -A ufw-before-output -p icmp -j ACCEPT
+
+- name: Setup UFW before rules
+  blockinfile:
+    path: /etc/ufw/before.rules
+    marker_begin: "forwarding BEGIN"
+    marker_end: "forwarding END"
+    block: |
+      # nat Table rules
+      *nat
+      :PREROUTING ACCEPT [0:0]
+      :POSTROUTING ACCEPT [0:0]
+      
+      # flush any previous NAT rules
+      -F
+      
+      # forward 192.168.99.1 port 2222 to 192.168.1.180:22
+      # forward 202.54.1.1  port 80 to 192.168.1.100:80
+      
+      #-A PREROUTING -i enp1s0 -d 192.168.99.1 -p tcp --dport 2222 -j DNAT --to-destination 192.168.1.180:22
+      -A PREROUTING -d 192.168.99.1 -p tcp --dport 2222 -j DNAT --to-destination {{ proxied_server_ip }}:22
+      -A PREROUTING -d 192.168.99.1 -p tcp --dport 139 -j DNAT --to-destination {{ proxied_server_ip }}
+      -A PREROUTING -d 192.168.99.1 -p tcp --dport 445 -j DNAT --to-destination {{ proxied_server_ip }}
+      -A PREROUTING -d 192.168.99.1 -p udp --dport 137 -j DNAT --to-destination {{ proxied_server_ip }}
+      -A PREROUTING -d 192.168.99.1 -p udp --dport 138 -j DNAT --to-destination {{ proxied_server_ip }}
+
+      # setup routing
+      #-A POSTROUTING -s 192.168.1.0/24 ! -d 192.168.1.0/24 -j MASQUERADE
+      -A POSTROUTING -o enp1s0 -j MASQUERADE
+      
+      # don't delete the 'COMMIT' line or these nat table rules won't be processed
+      COMMIT
+
+- name: Default allow outgoing traffic with UFW
+  ufw:
+    policy: allow
+    direction: outgoing
+
+- name: Default deny incoming traffic with UFW
+  ufw:
+    policy: allow
+    direction: incoming
+
+- name: Default allow forwarding traffic with UFW
+  ufw:
+    policy: allow
+    route: yes
+    direction: routed
+
+- name: Enable UFW
+  ufw:
+    state: enabled
+

@@ -1,0 +1,7 @@
+
+- name: "Configures a wireguard client that will connect to the wireguard server."
+  hosts: wireguard_clients
+  gather_facts: false
+
+  roles:
+    - setup-wireguard-client

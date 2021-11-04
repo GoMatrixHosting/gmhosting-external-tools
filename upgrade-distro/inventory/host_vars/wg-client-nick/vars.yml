@@ -1,0 +1,19 @@
+
+# WireGuard Clients Settings
+server_ip : 180.150.92.58
+server_hostname: wg-server
+server_wg_port: 51280
+
+# MooseFS Settings
+moosefs_enabled: True
+# blank these to out enable directories
+GoMatrixHosting_comment: ""
+perthchat_comment: ""
+GMH_Backups_comment: ""
+
+# Samba Settings
+<<<<<<< HEAD
+samba_enabled: True
+=======
+samba_enabled: False
+>>>>>>> 3b30f74351b0dce61706525187a38697961e7938

@@ -1,0 +1,4 @@
+
+[wireguard_servers]
+wg-server ansible_host=wg-server ansible_ssh_user=root ansible_python_interpreter=/usr/bin/python3
+

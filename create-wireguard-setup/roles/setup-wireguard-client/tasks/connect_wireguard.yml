@@ -1,0 +1,115 @@
+---
+
+- name: Install necessary utils on wireguard client
+  apt:
+    pkg:
+     - wireguard
+
+- name: Extract wg-ifupdown.tar.gz into /root
+  unarchive:
+    src: "{{ role_path }}/repos/wg-ifupdown.tar.gz"
+    dest: /root
+
+- name: Install wg-ifupdown module
+  shell:
+    cmd: /bin/sh /root/wg-ifupdown/install.sh
+    chdir: /root/wg-ifupdown/
+
+
+
+- name: Store client-private.key file into /tmp/client-private_{{ ansible_host }}.key
+  delegate_to: "{{ server_hostname }}"
+  fetch:
+    src: /etc/wireguard/wg0/client-private_{{ ansible_host }}.key
+    dest: /tmp/client-private_{{ ansible_host }}.key
+    flat: yes
+
+- name: Store client-public.key file into /tmp/client-public_{{ ansible_host }}.key
+  delegate_to: "{{ server_hostname }}"
+  fetch:
+    src: /etc/wireguard/wg0/client-public_{{ ansible_host }}.key
+    dest: /tmp/client-public_{{ ansible_host }}.key
+    flat: yes
+
+- name: Create wireguard config directory on client
+  file:
+    path: /etc/wireguard/wg0/
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Copy client-private.key file onto the client
+  copy:
+    src: /tmp/client-private.key
+    dest: /etc/wireguard/wg0/client-private_{{ ansible_host }}.key
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Copy client-public.key file onto the client
+  copy:
+    src: /tmp/client-public.key
+    dest: /etc/wireguard/wg0/client-public_{{ ansible_host }}.key
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Collect WireGuard servers public key value
+  delegate_to: "{{ server_hostname }}"
+  command: |
+    cat /etc/wireguard/wg0/server-public.key
+  register: server_public_key
+
+- name: Template a file to /etc/file.conf
+  template:
+    src: "{{ role_path }}/templates/config.j2"
+    dest: /etc/wireguard/wg0/config
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Check WireGuard Connectivity 1
+  command: ifup wg0
+  register: ifup_command
+
+- name: Check WireGuard Connectivity 2
+  command: wg show
+  register: wg_show_command
+
+- name: Check WireGuard Connectivity 3
+  command: ping -c 3 192.168.99.1
+  register: ping_command
+  ignore_errors: True
+
+- name: Print `ifup wg0` output
+  debug:
+    msg: "{{ ifup_command.stdout.split('\n') }}"
+
+- name: Print `wg show` output
+  debug:
+    msg: "{{ wg_show_command.stdout.split('\n') }}"
+
+- name: Print `ping -c 3 192.168.99.1` output
+  debug:
+    msg: "{{ ping_command.stdout.split('\n') }}"
+
+#9) CHECK IF IT'S WORKING!
+#
+#root@wg-client:# ifup wg0
+#
+#root@wg-client:# wg show
+#interface: wg0
+#  public key: hF3p/hI1vMmE7QX+d1IqgzLp/eqimrhIQCcuATXKJTc=
+#  private key: (hidden)
+#  listening port: 51820
+#  fwmark: 0x2a
+
+#peer: 0chY4Rel4oCcrQSIPckJQ01q8Ah8GNSGL5zBftaFy2I=
+#  endpoint: 165.22.245.207:51820
+#  allowed ips: 0.0.0.0/0, ::/0
+#  latest handshake: 25 seconds ago
+#  transfer: 92 B received, 180 B sent
+#  persistent keepalive: every 25 seconds
+
+

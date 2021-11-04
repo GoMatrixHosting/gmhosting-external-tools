@@ -1,0 +1,7 @@
+[Peer]
+# External wireguard relay server
+Endpoint = {{ server_ip }}:{{ server_wg_port }}
+PublicKey = {{ server_public_key.stdout }}
+# Peer is a relay server that bounces all internet & VPN traffic (like a proxy), including IPv6
+AllowedIPs = 0.0.0.0/0,::/0
+PersistentKeepalive = 25

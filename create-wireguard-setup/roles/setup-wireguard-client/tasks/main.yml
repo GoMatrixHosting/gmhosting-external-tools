@@ -1,0 +1,23 @@
+
+# Server Setup
+- import_tasks: "{{ role_path }}/tasks/setup_server.yml"
+  tags: setup-server
+<<<<<<< HEAD
+=======
+  
+# Connect a WireGuard client
+- import_tasks: "{{ role_path }}/tasks/connect_client.yml"
+  tags: wireguard
+>>>>>>> 3b30f74351b0dce61706525187a38697961e7938
+
+# Mounts MooseFS storage
+#- import_tasks: "{{ role_path }}/tasks/mount_moosefs.yml"
+#  tags: moosefs
+
+# Sets up SAMBA share for Windows users
+#- import_tasks: "{{ role_path }}/tasks/setup_samba.yml"
+#  tags: samba
+
+# Connect a WireGuard client
+- import_tasks: "{{ role_path }}/tasks/connect_wireguard.yml"
+  tags: wireguard

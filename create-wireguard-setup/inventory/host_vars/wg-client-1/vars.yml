@@ -1,0 +1,23 @@
+
+# WireGuard Clients Settings
+server_ip : 180.150.92.100
+server_hostname: wg-server
+server_wg_port: 51280
+
+# MooseFS Settings
+moosefs_enabled: True
+# blank these to out enable directories
+folder_1_mount: '/mnt/directory1'
+folder_1_mfs: '/directory1'
+folder_1_comment: ''
+folder_2_mount: '/mnt/directory2'
+folder_2_mfs: '/directory2'
+folder_2_comment: '#'
+folder_3_mount: '/mnt/directory3'
+folder_3_mfs: '/directory3'
+folder_3_comment: '#'
+
+# Samba Settings
+samba_enabled: True
+organisation_name: GoMatrixHosting
+samba_user: billy

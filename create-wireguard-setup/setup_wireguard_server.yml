@@ -1,0 +1,7 @@
+
+- name: "Configures a wireguard server that clients can use to SSH into GoMatrixHosting infrastructure."
+  hosts: wireguard_servers
+  gather_facts: true
+
+  roles:
+    - setup-wireguard-server

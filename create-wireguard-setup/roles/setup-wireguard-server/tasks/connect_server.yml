@@ -1,0 +1,18 @@
+
+- name: Set swap size for Wireguard Server
+  delegate_to: 127.0.0.1
+  set_fact:
+    swap_size: "1G"
+
+- name: Test if SSH is possible
+  command: echo success
+  register: echo_output
+  
+- debug:
+    msg: "{{ echo_output.stdout }}"
+
+- name: Disable password authentication
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    line: 'PasswordAuthentication no'
+

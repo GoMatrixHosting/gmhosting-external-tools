@@ -1,0 +1,171 @@
+
+- name: Extract wg-ifupdown.tar.gz into /root
+  unarchive:
+    src: "{{ role_path }}/repos/wg-ifupdown.tar.gz"
+    dest: /root
+
+- name: Install wg-ifupdown module
+  shell:
+    cmd: /bin/sh /root/wg-ifupdown/install.sh
+    chdir: /root/wg-ifupdown/
+
+- name: Create folder for the wireguard servers config
+  file:
+    path: /etc/wireguard/wg0
+    state: directory
+    mode: '0755'
+
+- name: Create wireguard keys for the server
+  shell: wg genkey | tee /etc/wireguard/wg0/server-private.key | wg pubkey > /etc/wireguard/wg0/server-public.key
+  args: 
+    creates: /etc/wireguard/wg0/server-private.key
+
+#- name: Collect value of servers pubic key
+#  command: cat /etc/wireguard/wg0/server-public.key
+#  register: server_public_key
+
+- name: Create wireguard keys for all the clients
+  shell: wg genkey | tee /etc/wireguard/wg0/client-private_{{ item.1 }}.key | wg pubkey > /etc/wireguard/wg0/client-public_{{ item.1 }}.key
+  args: 
+    creates: /etc/wireguard/wg0/client-private_{{ item.1 }}.key
+  with_indexed_items:
+    - "{{ client_hostnames }}"
+
+- name: Alter permission on the wireguard servers key
+  file:
+    path: /etc/wireguard/wg0/server-private.key
+    mode: '0600'
+
+- name: Alter permission on the wireguard clients key
+  file:
+    path: /etc/wireguard/wg0/client-private_{{ item.1 }}.key
+    mode: '0600'
+  with_indexed_items:
+    - "{{ client_hostnames }}"
+
+- name: Fetch all public client keys to controller
+  fetch:
+    src: /etc/wireguard/wg0/client-public_{{ item.1 }}.key
+    dest: /tmp/client-public_{{ item.1 }}.key
+    flat: yes
+  with_indexed_items:
+    - "{{ client_hostnames }}"
+
+#- name: Copy public client keys to wireguard clients
+#  delegate_to: "{{ item.1 }}"
+#  copy:
+#    src: /tmp/client-public_{{ item.1 }}.key
+#    dest: /etc/wireguard/wg0/client-public.key
+#    owner: root
+#    group: root
+#    mode: '0600'
+#  with_indexed_items:
+#    - "{{ client_hostnames }}"
+#  ignore_errors: True
+
+- name: Fetch all private client keys to controller
+  fetch:
+    src: /etc/wireguard/wg0/client-private_{{ item.1 }}.key
+    dest: /tmp/client-private_{{ item.1 }}.key
+    flat: yes
+  with_indexed_items:
+    - "{{ client_hostnames }}"
+
+#- name: Copy private client keys to wireguard clients
+#  delegate_to: "{{ item.1 }}"
+#  copy:
+#    src: /tmp/client-private_{{ item.1 }}.key
+#    dest: /etc/wireguard/wg0/client-private.key
+#    owner: root
+#    group: root
+#    mode: '0600'
+#  with_indexed_items:
+#    - "{{ client_hostnames }}"
+#  ignore_errors: True
+
+- name: Ensure interfaces.d source line exists in interfaces file
+  lineinfile:
+    path: /etc/network/interfaces
+    line: 'source /etc/network/interfaces.d/*'
+
+- name: Create wireguard interface entry on server
+  blockinfile:
+    path: /etc/network/interfaces.d/wg0.conf
+    create: yes
+    block: |
+      auto wg0
+      iface wg0 inet static
+          wg-private-key /etc/wireguard/wg0/server-private.key
+          wg-listen-port {{ server_wg_port }}
+          address 192.168.99.1/24
+          wg-autoroute no
+
+###
+
+- name: Create config entry for every wireguard client
+  include_tasks: create_client_config.yml 
+  with_indexed_items: "{{ client_hostnames }}"
+
+#- name: Record the public SSH key into a variable
+#  shell: cat /etc/wireguard/wg0/client-public_{{ item.1 }}.key
+#  register: "client_public_key_{{ item.1 }}"
+#  with_indexed_items:
+#    - "{{ client_hostnames }}"
+
+#- name: Create wireguard config file on server
+#  blockinfile:
+#    path: /etc/wireguard/wg0/config
+#    create: yes
+#    block: |
+#      [Peer]
+#      PublicKey = {{ client_public_key_{{ item.1 }}.stdout }}
+#      AllowedIPs = 192.168.99.{{ item.0 | int + 1 }}/32
+#  with_indexed_items:
+#    - "{{ client_hostnames }}"
+
+###
+
+
+- name: Template the wg0 config file on each client and save on controller
+  delegate_to: localhost
+  template:
+    src: "{{ role_path }}/templates/wg0.j2"
+    dest: "/tmp/wg0_{{ item.1 }}"
+    mode: '0644'
+  with_indexed_items:
+    - "{{ client_hostnames }}"
+
+- name: Copy these wg0 configs to each host
+  delegate_to: localhost
+  command: |
+      scp /tmp/wg0_{{ item.1 }} {{ item.1 }}:/etc/network/interfaces.d/wg0
+  with_indexed_items:
+    - "{{ client_hostnames }}"
+  ignore_errors: True
+
+# /tmp/wg0
+# /etc/network/interfaces.d/wg0
+
+- name: Enable IP forwarding
+  blockinfile:
+    path: /etc/ufw/sysctl.conf
+    insertafter: "# Uncomment this to allow this host to route packets between interfaces"
+    block: |
+      net/ipv4/ip_forward=1
+      net/ipv6/conf/default/forwarding=1
+      net/ipv6/conf/all/forwarding=1
+
+- name: Reload and enable UFW
+  ufw:
+    state: enabled
+
+# Try this instead!
+- name: Restart WireGuard Interface
+  command: ifdown wg0
+  
+- name: Restart WireGuard Interface
+  command: ifup wg0
+
+#- name: Reboot server to fix wireguard
+#  reboot:
+#    reboot_timeout: 60

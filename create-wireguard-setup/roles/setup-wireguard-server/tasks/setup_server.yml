@@ -1,0 +1,115 @@
+
+- name: Update repositories and all packages on target machine
+  apt:
+    name: "*"
+    update_cache: yes
+
+- name: Update all packages to their latest version
+  apt:
+    name: "*"
+    state: latest
+
+#- name: Add buster-backports repository into sources list
+#  delegate_to: "{{ server_ip }}"
+#  apt_repository:
+#    repo: deb http://deb.debian.org/debian buster-backports main
+#    state: present
+
+- name: Install necessary utils on wireguard server
+  apt:
+    pkg:
+     - wireguard
+#    default_release: buster-backports
+
+- name: Collect kernel version
+  shell: uname -r
+  register: kernel_version
+
+- name: Install Linux headers and other packages on wireguard server
+  apt:
+    pkg:
+     - prometheus-node-exporter
+     - unattended-upgrades
+     - apt-listchanges
+     - "linux-headers-{{ kernel_version.stdout }}"
+  ignore_errors: True
+
+- name: Adjust environment file for Node Exporter
+  lineinfile:
+    path: /etc/default/prometheus-node-exporter
+    regexp: "^ARGS=.*$"
+    line: "ARGS='--web.listen-address=\":9200\"'"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Restart service prometheus-node-exporter, in all cases
+  service:
+    name: prometheus-node-exporter
+    state: restarted
+
+- name: Configure unattended-upgrades 1
+  lineinfile:
+    path: /etc/apt/apt.conf.d/50unattended-upgrades
+    regexp: '^\/\/      "origin=Debian,codename=\$\{distro_codename}-updates\";$'
+    line: '        "origin=Debian,codename=${distro_codename}-updates";'
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Configure unattended-upgrades 2
+  lineinfile:
+    path: /etc/apt/apt.conf.d/50unattended-upgrades
+    regexp: '^\/\/      "origin=Debian,codename=\$\{distro_codename}-proposed-updates\";$'
+    line: '        "origin=Debian,codename=${distro_codename}-proposed-updates";'
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Configure unattended-upgrades 3
+  lineinfile:
+    path: /etc/apt/apt.conf.d/50unattended-upgrades
+    regexp: '^\/\/      "o=Debian Backports,a=\$\{distro_codename}-backports,l=Debian Backports";$'
+    line: '        "o=Debian Backports,a=${distro_codename}-backports,l=Debian Backports";'
+    owner: root
+    group: root
+    mode: '0644'
+
+#- name: Create swapfile with the right permissions
+#  command: 'fallocate -l {{ swap_size }} /swapfile'
+#  register: swapfile_new
+#  args:
+#    creates: /swapfile
+    
+#- name: Set correct permissions on swapfile
+#  command: 'chmod 600 /swapfile'
+#  when: swapfile_new.delta is defined
+
+#- name: Make swapfile
+#  command: 'mkswap /swapfile'
+#  when: swapfile_new.delta is defined
+  
+#- name: Make swapfile
+#  command: 'swapon /swapfile'
+#  when: swapfile_new.delta is defined
+
+#- name: Make swapfile permanent in /etc/fstab
+#  mount: name=none
+#         src=/swapfile
+#         fstype=swap
+#         opts=sw
+#         passno=0
+#         dump=0
+#         state=present
+
+- name: Set swappiness to 20
+  shell: sysctl vm.swappiness=20
+
+- name: Set swappiness to 20 on reboot
+  lineinfile:
+    path: /etc/sysctl.conf
+    line: vm.swappiness=20
+    owner: root
+    group: root
+    mode: '0644'
+

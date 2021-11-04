@@ -1,0 +1,6 @@
+
+[matrix_clients]
+matrix.example.org ansible_host=matrix.example.org ansible_ssh_user=root ansible_python_interpreter=/usr/bin/python3
+
+[wireguard_clients]
+wireguard.example.org ansible_host=wireguard.example.org ansible_ssh_user=root ansible_python_interpreter=/usr/bin/python3

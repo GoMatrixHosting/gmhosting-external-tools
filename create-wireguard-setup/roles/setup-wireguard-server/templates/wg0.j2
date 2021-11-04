@@ -1,0 +1,13 @@
+auto wg0
+iface wg0 inet static
+#    maybe? # pre-up /sbin/modprobe wireguard
+    wg-private-key /etc/wireguard/wg0/client-private.key
+    wg-listen-port {{ server_wg_port }}
+    wg-fwmark 42
+    address 192.168.99.{{ item.0 | int + 2 }}/24
+    wg-autoroute no
+# see https://www.wireguard.com/netns/#improved-rule-based-routing
+#    post-up ip route add 192.168.1.0/24 via 192.168.99.1
+    post-up ip route add default dev wg0 table 2468
+    post-up ip rule add not fwmark 42 table 2468
+    post-up ip rule add table main suppress_prefixlength 0
