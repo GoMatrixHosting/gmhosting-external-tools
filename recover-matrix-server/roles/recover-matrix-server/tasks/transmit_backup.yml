@@ -1,0 +1,97 @@
+
+- name: Check if lock_file_6 exists
+  stat: 
+    path: "/tmp/{{ matrix_domain }}_lock_6"
+  register: lock_file_6
+
+#13A - (Admin Restore) Rsync /matrix, /chroot/website and the database into the server:
+
+#$ ssh matrix.fishbole.xyz
+#root@fishbole.xyz:~# sudo apt install rsync
+#root@fishbole.xyz:~# exit
+
+#$ rsync -av ./matrix/ matrix.fishbole.xyz:/matrix/
+#$ rsync -av ./chroot/website/ matrix.fishbole.xyz:/chroot/website/
+#$ rsync -av ./chroot/export/postgres_2021-06-12.sql.gz  matrix.fishbole.xyz:/chroot/export/
+
+#13B - (Admin Import) Copy export into /chroot/export/ with SCP, extract /matrix:
+
+#~/Documents$ scp ./chroot/export/* root@matrix.fishbole.xyz:/chroot/export/
+#matrix_2021-03-02.tar.gz                                            100% 6139KB 738.3KB/s   00:08
+#postgres_2021-03-02.sql.gz                                          100% 7496KB 796.3KB/s   00:09 
+
+#root@fishbole.xyz:~# tar -xvzf /chroot/export/matrix_2021-06-12.tar.gz -C /
+
+
+# generate SSH key on backup server
+
+- name: Generate an OpenSSH keypair with a different algorithm (dsa)
+  delegate_to: "{{ backup_server }}"
+  community.crypto.openssh_keypair:
+    path: /tmp/{{ matrix_domain }}_recovery
+    type: ed25519
+  when: lock_file_6.stat.exists == false
+
+# add it temporarily to the new matrix server
+
+- name: Fetch the '{{ matrix_domain }}_recovery.pub' key of the new subscription. 
+  delegate_to: "{{ backup_server }}"
+  fetch:
+    src: "/tmp/{{ matrix_domain }}_recovery.pub"
+    dest: "/tmp/{{ matrix_domain }}_recovery.pub"
+    flat: yes
+  when: lock_file_6.stat.exists == false
+
+- name: Set the new authorized key taken from '{{ matrix_domain }}_recovery.pub' file
+  delegate_to: "{{ server_ip4 }}"
+  authorized_key:
+    user: root
+    state: present
+    exclusive: no
+    key: "{{ lookup('file', '/tmp/{{ matrix_domain }}_recovery.pub') }}"
+  when: lock_file_6.stat.exists == false
+
+# restore the rsync
+
+- name: Install Rsync onto backup server
+  delegate_to: "{{ backup_server }}"
+  apt:
+    name: rsync
+  when: lock_file_6.stat.exists == false
+
+- name: Install Rsync onto new Matrix server
+  delegate_to: "{{ server_ip4 }}"
+  apt:
+    name: rsync
+  when: lock_file_6.stat.exists == false
+
+- name: Update SSH config on backup server
+  delegate_to: "{{ backup_server }}"
+  blockinfile:
+    path: /root/.ssh/config
+    create: yes
+    block: |
+      Host matrix.{{ matrix_domain }}
+          HostName {{ server_ip4 }}
+          Port 22
+          User root
+          IdentityFile /tmp/{{ matrix_domain }}_recovery
+  when: lock_file_6.stat.exists == false
+
+- name: Rsync ./matrix/ to the new Matrix server
+  delegate_to: "{{ backup_server }}"
+  command: |
+    rsync -av {{ backup_extraction_directory }}/{{ matrix_domain }}/matrix/ matrix.{{ matrix_domain }}:/matrix/
+  when: lock_file_6.stat.exists == false
+
+- name: Rsync ./chroot/ to the new Matrix server
+  delegate_to: "{{ backup_server }}"
+  command: |
+    rsync -av {{ backup_extraction_directory }}/{{ matrix_domain }}/chroot/ matrix.{{ matrix_domain }}:/chroot/
+  when: lock_file_6.stat.exists == false
+
+- name: Create lock_file_6
+  file:
+    path: /tmp/{{ matrix_domain }}_lock_6
+    state: touch
+  when: lock_file_6.stat.exists == false

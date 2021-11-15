@@ -1,0 +1,108 @@
+
+
+- name: Check if lock_file_7 exists
+  stat: 
+    path: "/tmp/{{ matrix_domain }}_lock_7"
+  register: lock_file_7
+
+#14) Delete and re-create existing databases:
+
+#root@fishbole.xyz:~# docker exec -it matrix-postgres /bin/bash -c 'dropdb matrix'
+#root@fishbole.xyz:~# docker exec -it matrix-postgres /bin/bash -c 'dropdb matrix_ma1sd'
+#root@fishbole.xyz:~# docker exec -it matrix-postgres /bin/bash -c 'dropdb -f synapse'
+
+#bash-5.1$ createdb --template=template0 --encoding=UTF8 --locale=C matrix
+#bash-5.1$ createdb --template=template0 --encoding=UTF8 --locale=C matrix_ma1sd
+#bash-5.1$ createdb --template=template0 --encoding=UTF8 --locale=C synapse
+
+- name: Delete and re-create existing databases
+  delegate_to: "{{ server_ip4 }}"
+  command: "{{ item }}"
+  with_items:
+    - docker exec -it matrix-postgres /bin/bash -c 'dropdb matrix'
+    - docker exec -it matrix-postgres /bin/bash -c 'dropdb matrix_ma1sd'
+    - docker exec -it matrix-postgres /bin/bash -c 'dropdb -f synapse'
+    - docker exec -it matrix-postgres /bin/bash -c 'createdb --template=template0 --encoding=UTF8 --locale=C matrix'
+    - docker exec -it matrix-postgres /bin/bash -c 'createdb --template=template0 --encoding=UTF8 --locale=C matrix_ma1sd'
+    - docker exec -it matrix-postgres /bin/bash -c 'createdb --template=template0 --encoding=UTF8 --locale=C synapse'
+  when: lock_file_7.stat.exists == false
+
+
+
+#15) Import the database dump:
+
+#Run the '00 - Restore and Import Postgresql Dump' job template with:
+#- member's Inventory
+#- member's deploy Project with setup.yml Playbook
+#- member's SSH Credential
+#- include all the extra variables found in /matrix/awx/extra_vars.json and the {{ server_path_postgres_dump }}, for example:
+
+#---
+#server_path_postgres_dump: /chroot/export/postgres_2021-06-12.sql.gz
+#plan_title: 'Micro DigitalOcean Server'
+#subscription_id: T-FKFAMCCR7CHX
+#member_id: 31
+#target: "matrix.fishbole.xyz"
+#matrix_domain: "fishbole.xyz"
+#matrix_awx_enabled: true
+
+
+# collect   "server_path_postgres_dump": "/chroot/export/postgres_2021-03-02.sql.gz"
+
+- name: Rsync ./chroot/ to the new Matrix server
+  delegate_to: "{{ server_ip4 }}"
+  command: |
+    ls /chroot/export/postgres_*
+  when: lock_file_7.stat.exists == false
+  register: server_path_postgres_dump
+
+
+# template it
+
+- name: Save new 'Provision Server' survey.json to the AWX tower, template
+  template:
+    src: './extra-vars/restore-and-import-postgresql-dump.json.j2'
+    dest: '/tmp/{{ matrix_domain }}_restore-and-import-postgresql-dump.json'
+  when: lock_file_7.stat.exists == false
+
+- name: Re-create '00 - Restore and Import Postgresql Dump' job template
+  awx.awx.tower_job_template:
+    name: "00 - Restore and Import Postgresql Dump"
+    description: "Restores a servers configs, media repo and postgresql database from /chroot/backup/."
+    job_type: run
+    inventory: "{{ member_id }}"
+    project: "{{ member_id }} - Matrix Docker Ansible Deploy"
+    playbook: create.yml
+    extra_vars: "{{ lookup('file', '/tmp/{{ matrix_domain }}_restore-and-import-postgresql-dump.json') }}"
+    ask_extra_vars: yes
+    state: present
+    verbosity: 1
+    job_tags: import-postgres, import-awx
+    tower_host: "https://{{ awx_url }}"
+    tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+    validate_certs: yes
+  when: lock_file_7.stat.exists == false
+
+# launch it
+
+- name: Launch import job template on AWX
+  awx.awx.tower_job_launch:
+    job_template: "00 - Restore and Import Postgresql Dump"
+    extra_vars: "{{ lookup('file', '/tmp/{{ matrix_domain }}_restore-and-import-postgresql-dump.json') }}"
+    tower_host: "https://{{ awx_host }}"
+    tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+    validate_certs: yes
+  when: lock_file_7.stat.exists == false
+  register: import_job
+
+- name: Wait for job max 900s (15m)
+  awx.awx.tower_job_wait:
+    job_id: "{{ import_job.id }}"
+    timeout: 900
+  when: lock_file_7.stat.exists == false
+
+- name: Create lock_file_7
+  file:
+    path: /tmp/{{ matrix_domain }}_lock_7
+    state: touch
+  when: lock_file_7.stat.exists == false

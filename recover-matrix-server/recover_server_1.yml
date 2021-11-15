@@ -1,0 +1,10 @@
+---
+- name: "Recovers a Matrix server to AWX."
+  hosts: localhost
+  gather_facts: true
+
+#  vars_files:
+#    - roles/matrix-synapse/vars/workers.yml
+
+  roles:
+    - recover-matrix-server

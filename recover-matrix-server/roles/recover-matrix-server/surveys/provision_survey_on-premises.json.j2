@@ -1,0 +1,66 @@
+{
+  "name": "Provision Survey DigitalOcean",
+  "description": "The provision survey for connecting an on-premises server.",
+  "spec": [
+    {
+      "question_name": "Set Base Domain",
+      "question_description": "The base domain of your website (Eg: example.org), this must be a domain name you own. WARNING: Think carefully as this decision can only be made once.",
+      "required": false,
+      "min": 0,
+      "max": 2048,
+      "default": "{{ matrix_domain | trim }}",
+      "choices": "",
+      "new_question": true,
+      "variable": "matrix_domain",
+      "type": "text"
+    },
+    {
+      "question_name": "Base Domain Used",
+      "question_description": "Do you have existing web services at this domain? If so select 'true' you'll need to configure a .well-known entry at this domain before deploying. Contact support if you need assistance doing this.",
+      "required": false,
+      "min": null,
+      "max": null,
+      "default": "{{ base_domain_used }}",
+      "choices": "true\nfalse",
+      "new_question": true,
+      "variable": "base_domain_used",
+      "type": "multiplechoice"
+    },
+    {
+      "question_name": "Set Element Subdomain",
+      "question_description": "Sets the subdomain of the Element web-client, you should only specify the subdomain, not the base domain you've already specified above. (Eg: 'element' for element.example.org)",
+      "required": false,
+      "min": 0,
+      "max": 2048,
+      "default": "{{ awx_element_subdomain | trim }}",
+      "choices": "",
+      "new_question": true,
+      "variable": "awx_element_subdomain",
+      "type": "text"
+    },
+    {
+      "question_name": "Server IPv4",
+      "question_description": "The IPv4 address of the existing server. You must already have the AWX hosters public SSH key loaded into it. At least one IP address must be specified.",
+      "required": false,
+      "min": 0,
+      "max": 64,
+      "default": "{{ server_ipv4 | trim }}",
+      "choices": "",
+      "new_question": true,
+      "variable": "server_ipv4",
+      "type": "text"
+    },
+    {
+      "question_name": "Server IPv6",
+      "question_description": "The IPv6 address of the existing server. You must already have the AWX hosters public SSH key loaded into it. At least one IP address must be specified.",
+      "required": false,
+      "min": 0,
+      "max": 64,
+      "default": "{{ server_ipv6 | trim }}",
+      "choices": "",
+      "new_question": true,
+      "variable": "server_ipv6",
+      "type": "text"
+    }
+  ]
+}

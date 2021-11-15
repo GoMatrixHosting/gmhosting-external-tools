@@ -1,0 +1,221 @@
+
+- name: Check if lock_file_3 exists
+  stat: 
+    path: "/tmp/{{ matrix_domain }}_lock_3"
+  register: lock_file_3
+
+#4) Download extracted export to controller:
+
+#user@localhost:~/Documents$ rsync -av backup_server:/mnt/backup-dir/Extracted/ ./
+
+#    - name: Copy extracted backups to controller
+#      delegate_to: localhost
+#      command: |
+#        rsync -av {{ backup_server }}:{{ backup_directory }}/extracted/ ./extracted/
+
+#REEEEEE lets just beam it directly to the new server!
+
+#organisation.yml
+#matrix_awx.yml
+#server_vars.yml
+#extra_vars.json
+
+- name: Fetch 'organisation.yml' from extracted backup
+  delegate_to: "{{ backup_server }}"
+  fetch:
+    src: "{{ backup_directory }}/extracted/{{ matrix_domain }}/matrix/awx/organisation.yml"
+    dest: "/tmp/{{ matrix_domain }}-organisation.yml"
+    flat: yes
+  #when: lock_file_3.stat.exists == false
+
+- name: Include organisation.yml variable file
+  include_vars: "/tmp/{{ matrix_domain }}-organisation.yml"
+  #when: lock_file_3.stat.exists == false
+
+- name: Fetch 'matrix_vars.yml' from extracted backup
+  delegate_to: "{{ backup_server }}"
+  fetch:
+    src: "{{ backup_directory }}/extracted/{{ matrix_domain }}/matrix/awx/matrix_vars.yml"
+    dest: "/tmp/{{ matrix_domain }}-matrix_vars.yml"
+    flat: yes
+  #when: lock_file_3.stat.exists == false
+
+- name: Include matrix_vars.yml variable file
+  include_vars: "/tmp/{{ matrix_domain }}-matrix_vars.yml"
+  #when: lock_file_3.stat.exists == false
+
+- name: Fetch 'server_vars.yml' from extracted backup
+  delegate_to: "{{ backup_server }}"
+  fetch:
+    src: "{{ backup_directory }}/extracted/{{ matrix_domain }}/matrix/awx/server_vars.yml"
+    dest: "/tmp/{{ matrix_domain }}-server_vars.yml"
+    flat: yes
+  #when: lock_file_3.stat.exists == false
+
+- name: Include server_vars.yml variable file
+  include_vars: "/tmp/{{ matrix_domain }}-server_vars.yml"
+  #when: lock_file_3.stat.exists == false
+
+- name: Fetch 'extra_vars.json' from extracted backup
+  delegate_to: "{{ backup_server }}"
+  fetch:
+    src: "{{ backup_directory }}/extracted/{{ matrix_domain }}/matrix/awx/extra_vars.json"
+    dest: "/tmp/{{ matrix_domain }}-extra_vars.json"
+    flat: yes
+  #when: lock_file_3.stat.exists == false
+
+- name: Include extra_vars.json variable file
+  include_vars: "/tmp/{{ matrix_domain }}-extra_vars.json"
+  #when: lock_file_3.stat.exists == false
+
+#5) Extract variables needed to re-create subscription:
+
+#On controller, extract matrix.tar.gz, examine /matrix/awx/organisation.yml and /matrix/awx/matrix_awx.yml and /matrix/awx/server_vars.yml and /matrix/awx/extra_vars.json, copy:
+
+#- client_email: "bobfett@protonmail.com"		[/matrix/awx/organisation.yml]
+#- client_first_name: "Bob"				[/matrix/awx/organisation.yml]
+#- client_last_name: "Fett"				[/matrix/awx/organisation.yml]
+#- matrix_domain: fishbole.xyz				[/matrix/awx/matrix_vars.yml]
+#- matrix_server_fqn_element: element.fishbole.xyz	[/matrix/awx/matrix_vars.yml]
+#- matrix_nginx_proxy_base_domain_serving_enabled: true	[/matrix/awx/matrix_vars.yml]
+#- subscription_type: digitalocean			[/matrix/awx/server_vars.yml]
+#- plan_title: Medium DigitalOcean Server		[/matrix/awx/extra_vars.json]
+#- subscription_id: I-CREUS74S6969			[/matrix/awx/extra_vars.json]
+#- member_id: 31						[/matrix/awx/extra_vars.json]
+
+#As well as:
+
+#- do_droplet_region: tor1				[/matrix/awx/server_vars.yml]
+#OR
+#- server_ipv4: 134.209.44.206				[/matrix/awx/server_vars.yml]
+#- server_ipv6: 2604:a880:800:c1::181:7001		[/matrix/awx/server_vars.yml]
+
+
+#6) Observe 'subscription_id' in server_vars.yml, if it's a MemberPress subscription (Starts with I-) launch '00 - Ansible Create MP Subscription' with the above variables, otherwise if it's a manual subscription (Starts with T-) launch '00 - Ansible Create Manual Subscription'.
+
+- debug:
+    msg: "{{ subscription_id }}"
+  when: lock_file_3.stat.exists == false
+
+- debug:
+    msg: "{{ member_id }}"
+  when: lock_file_3.stat.exists == false
+
+- debug:
+    msg: "T- found in subscription_id!"
+  when: ( subscription_id is search("^T-") ) and ( lock_file_3.stat.exists == false )
+  
+- debug:
+    msg: "T- found in subscription_id!"
+  when: ( subscription_id is search("^sub_") ) and ( lock_file_3.stat.exists == false )
+
+# Fetch AWX master token
+
+
+
+# Manual needs:
+#
+# client_first_name		Billy
+# client_last_name		Bob
+# client_email		billybob@protonmail.com
+# client_password		hunter2
+# member_id			billy.bob
+# plan_title		Micro DigitalOcean Server
+
+# MP needs:
+# 
+# client_first_name		Tom
+# client_last_name		Cruise
+# client_email		tomcruise@protonmail.com
+# member_id			20
+# subscription_id		I-VCRY4H9EKT9A
+# plan_title		Small DigitalOcean Server
+
+# Should it avoid re-making this is it's already created? YES!
+
+# need new_subscription_id value for MP/Manual?? should be stored??
+
+# need client_password value for Manual?? no should probably skip every time
+
+# Plan:
+# 1) admin provides new_subscription_id or 'null' for generating a new one
+
+- name: Check if matrix_domain_file exists for this subscription
+  stat:
+    path: './inventory/{{ matrix_domain }}.yml'
+  #when: lock_file_3.stat.exists == false
+  register: matrix_domain_file
+
+- name:
+  set_fact:
+    create_subscription_template: '00 - Create MP Subscription'
+  when: ( subscription_id is search("^sub_") ) and ( not matrix_domain_file.stat.exists) and ( lock_file_3.stat.exists == false )
+
+- name:
+  set_fact:
+    create_subscription_template: '00 - Create Manual Subscription'
+  when: ( subscription_id is search("^T-") ) and ( not matrix_domain_file.stat.exists) and ( lock_file_3.stat.exists == false )
+
+- name: Include new_subscription_id from '{{ matrix_domain }}.yml' if it exists yet 
+  include_vars:
+    file: "./inventory/{{ matrix_domain }}.yml"
+  when: ( matrix_domain_file.stat.exists ) and ( lock_file_3.stat.exists == false )
+
+- name: Generate random string for subscription_id
+  shell: tr -dc A-Z0-9 </dev/urandom | head -c 12
+  when: ( not matrix_domain_file.stat.exists ) and ( lock_file_3.stat.exists == false )
+  register: random_string
+
+- name: Set subscription_id
+  set_fact:
+    new_subscription_id: "R-{{ random_string.stdout }}"
+  when: ( not matrix_domain_file.stat.exists ) and ( lock_file_3.stat.exists == false )
+
+# 2) it's stored in the inventory file ./inventory/{{ matrix_domain }}.yml for the next run
+# 3) used to check if subscription exists already
+
+- name: Template new '{{ matrix_domain }}_create_subscription_template.json' extra variables
+  template:
+    src: './extra-vars/mp_create_subscription_template.json.j2'
+    dest: '/tmp/{{ matrix_domain }}_create_subscription_template.json'
+  when: ( subscription_id is search("^sub_") ) and ( not matrix_domain_file.stat.exists) and ( lock_file_3.stat.exists == false )
+
+- name: Template new '{{ matrix_domain }}_create_subscription_template.json' extra variables
+  template:
+    src: './extra-vars/manual_create_subscription_template.json.j2'
+    dest: '/tmp/{{ matrix_domain }}_create_subscription_template.json'
+  when: ( subscription_id is search("^T-") ) and ( not matrix_domain_file.stat.exists) and ( lock_file_3.stat.exists == false )
+
+- name: Launch subscription creation job template on AWX
+  awx.awx.tower_job_launch:
+    job_template: '{{ create_subscription_template }}'
+    extra_vars: "{{ lookup('file', '/tmp/{{ matrix_domain }}_create_subscription_template.json') }}"
+    tower_host: "https://{{ awx_host }}"
+    tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+    validate_certs: yes
+  when: ( not matrix_domain_file.stat.exists ) and ( lock_file_3.stat.exists == false )
+  register: create_job
+
+- name: Wait for job max 300s
+  awx.awx.tower_job_wait:
+    job_id: "{{ create_job.id }}"
+    timeout: 300
+    tower_host: "https://{{ awx_host }}"
+    tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+    validate_certs: yes
+  when: ( not matrix_domain_file.stat.exists ) and ( lock_file_3.stat.exists == false )
+
+- name: Generate '{{ matrix_domain }}.yml' inventory file if it doesn't exist
+  lineinfile:
+    path: './inventory/{{ matrix_domain }}.yml'
+    create: yes
+    regexp: '^new_subscription_id: .*'
+    line: 'new_subscription_id: {{ new_subscription_id }}'
+    mode: '0600'
+  when: ( not matrix_domain_file.stat.exists ) and ( lock_file_3.stat.exists == false )
+
+- name: Create lock_file_3
+  file:
+    path: /tmp/{{ matrix_domain }}_lock_3
+    state: touch
+  when: lock_file_3.stat.exists == false

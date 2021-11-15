@@ -1,0 +1,166 @@
+
+- name: Check if lock_file_4 exists
+  stat: 
+    path: "/tmp/{{ matrix_domain }}_lock_4"
+  register: lock_file_4
+
+#7) Ensure the previous backup has been moved:
+
+#backup_user@backup_server:~$ mv /mnt/backup-dir/Clients/fishbole.xyz/ /mnt/backup-dir/Clients/fishbole.xyz-old/
+
+# fetch provision script
+
+- name: Set awx_element_subdomain variable for provision
+  set_fact:
+    awx_element_subdomain: '{{ matrix_server_fqn_element.split(".")[0] | lower }}'
+  when: matrix_nginx_proxy_base_domain_serving_enabled | bool
+
+- name: Set awx_element_subdomain variable for provision
+  set_fact:
+    awx_element_subdomain: '{{ matrix_server_fqn_element.split(".")[0] | lower }}'
+  when: not matrix_nginx_proxy_base_domain_serving_enabled | bool
+
+- name: Check that the subscriptions backup directory exists
+  delegate_to: "{{ backup_server }}"
+  stat:
+    path: '{{ backup_directory }}/Clients/{{ matrix_domain }}'
+  register: subscription_backup_directory
+  when: lock_file_4.stat.exists == false
+
+- name: Move the subscriptions backup directory if unmoved
+  delegate_to: "{{ backup_server }}"
+  command: mv "{{ backup_directory }}/Clients/{{ matrix_domain }}" "{{ backup_directory }}/Clients/{{ matrix_domain }}-old"
+  when: ( subscription_backup_directory.stat.exists ) and ( lock_file_4.stat.exists == false )
+
+
+#8) Remove the 'imposter-check' tag from 'Provision a New Server', then run the template with these survey answers:
+
+#SET BASE DOMAIN - matrix_domain
+
+#BASE DOMAIN USED - If matrix_nginx_proxy_base_domain_serving_enabled: true, then select 'false', otherwise select 'true'. 
+
+#SET ELEMENT SUBDOMAIN - Copy only the subdomain from matrix_server_fqn_element, for example only 'element' out of element.gnuperth.org.
+
+#SELECT REGION - Figure it out from the do_droplet_region. (Or a different one if you're trying to migrate it)
+
+#OR
+
+#SERVER IPV4/SERVER IPV6 - Enter the IPs for the new on-premises server. 
+
+- name: Include 'new_subscription_id' variables from '{{ matrix_domain }}.yml'
+  include_vars:
+    file: './inventory/{{ matrix_domain }}.yml'
+  when: matrix_domain_file.stat.exists
+
+- name: Template new 'provision_server_template.json' extra variables
+  template:
+    src: './extra-vars/digitalocean_provision_server_extra-vars.json.j2'
+    dest: '/tmp/{{ matrix_domain }}_provision_server_extra-vars.json'
+  when: ( subscription_type == "digitalocean" ) and ( lock_file_4.stat.exists == false )
+
+- name: Template new 'provision_server_template.json' extra variables
+  template:
+    src: './extra-vars/on_premises_provision_server_extra-vars.json.j2'
+    dest: '/tmp/{{ matrix_domain }}_provision_server_extra-vars.json'
+  when: ( subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
+
+
+- name: Save new 'Provision Server' survey.json to the AWX tower, template
+  template:
+    src: './surveys/provision_survey_digitalocean.json.j2'
+    dest: '/tmp/{{ matrix_domain }}_provision_survey_digitalocean.json'
+  when: ( subscription_type == "digitalocean" ) and ( lock_file_4.stat.exists == false )
+
+- name: Save new 'Provision Server' survey.json to the AWX tower, template
+  template:
+    src: './surveys/provision_survey_on-premises.json.j2'
+    dest: '/tmp/{{ matrix_domain }}_provision_survey_on-premises.json'
+  when: ( subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
+
+- name: Remove imposter-check tag from 'Provision a New Server' job template
+  awx.awx.tower_job_template:
+    name: "0 - {{ new_subscription_id }} - Provision a New Server"
+    description: "Creates digitalocean droplet and space, performs initial setup, adds relevant playbooks to users account."
+    extra_vars: "{{ lookup('file', '/tmp/{{ matrix_domain }}_provision_server_extra-vars.json') }}"
+    job_type: run
+    inventory: "{{ member_id }}"
+    project: "{{ member_id }} - Ansible Provision Server"
+    playbook: setup.yml
+    credential: "{{ member_id }} - AWX SSH Key"
+    survey_enabled: true
+    survey_spec: "{{ lookup('file', '/tmp/{{ matrix_domain }}_provision_survey_digitalocean.json') }}"
+    state: present
+    verbosity: 1
+    job_tags: setup-firewall, setup-mailgun, setup-export, setup-backup
+    skip_tags: digitalocean-space
+    tower_host: "https://{{ awx_host }}"
+    tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+    validate_certs: yes
+  when: ( subscription_type == "digitalocean" ) and ( lock_file_4.stat.exists == false )
+
+- name: Remove imposter-check tag from 'Provision a New Server' job template
+  awx.awx.tower_job_template:
+    name: "0 - {{ subscription_id }} - Provision a New Server"
+    description: "Connects existing server, performs initial setup, adds relevant playbooks to users account."
+    extra_vars: "{{ lookup('file', '/tmp/{{ matrix_domain }}_provision_server_extra-vars.json') }}"
+    job_type: run
+    inventory: "{{ member_id }}"
+    project: "{{ member_id }} - Ansible Provision Server"
+    playbook: setup.yml
+    credential: "{{ member_id }} - AWX SSH Key"
+    survey_enabled: true
+    survey_spec: "{{ lookup('file', '/tmp/{{ matrix_domain }}_provision_survey_on-premises.json') }}"
+    state: present
+    verbosity: 1
+    job_tags: setup-firewall, setup-mailgun, setup-export, setup-backup
+    skip_tags: digitalocean-space, digitalocean-droplet
+    tower_host: "https://{{ awx_host }}"
+    tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+    validate_certs: yes
+  when: ( subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
+
+- name: Disallow team from executing the 'Provision a New Server' job_template
+  awx.awx.tower_role:
+    team: "{{ member_id }}"
+    job_template: "0 - {{ subscription_id }} - Provision a New Server"
+    role: execute
+    state: absent
+    tower_host: "https://{{ awx_host }}"
+    tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+    validate_certs: yes
+  when: lock_file_4.stat.exists == false 
+  ignore_errors: yes
+
+- name: Allow team to view the new 'Provision a New Server' job_template
+  awx.awx.tower_role:
+    team: "{{ member_id }}"
+    job_template: "0 - {{ subscription_id }} - Provision a New Server"
+    role: read
+    state: present
+    tower_host: "https://{{ awx_host }}"
+    tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+    validate_certs: yes
+  when: lock_file_4.stat.exists == false
+  ignore_errors: yes
+
+- name: Launch provision job template on AWX
+  awx.awx.tower_job_launch:
+    job_template: "0 - {{ subscription_id }} - Provision a New Server"
+    extra_vars: "{{ lookup('file', '/tmp/{{ matrix_domain }}_provision_server_extra-vars.json') }}"
+    tower_host: "https://{{ awx_host }}"
+    tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+    validate_certs: yes
+  when: ( not matrix_domain_file.stat.exists ) and ( lock_file_4.stat.exists == false )
+  register: provision_job_1
+
+- name: Wait for job max 900s (15m)
+  awx.awx.tower_job_wait:
+    job_id: "{{ provision_job_1.id }}"
+    timeout: 900
+  when: ( not matrix_domain_file.stat.exists ) and ( lock_file_4.stat.exists == false )
+
+- name: Create lock_file_4
+  file:
+    path: /tmp/{{ matrix_domain }}_lock_4
+    state: touch
+  when: lock_file_4.stat.exists == false

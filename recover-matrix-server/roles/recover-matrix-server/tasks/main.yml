@@ -1,0 +1,31 @@
+
+# Backup original subscription if possible and stop the service
+- import_tasks: "{{ role_path }}/tasks/create_token.yml"
+
+# Backup original subscription if possible and stop the service
+- import_tasks: "{{ role_path }}/tasks/backup_server.yml"
+  #tags: always
+
+# Backup original subscription if possible and stop the service
+- import_tasks: "{{ role_path }}/tasks/restore_backup.yml"
+
+# Backup original subscription if possible and stop the service
+- import_tasks: "{{ role_path }}/tasks/create_subscription.yml"
+
+# Backup original subscription if possible and stop the service
+- import_tasks: "{{ role_path }}/tasks/provision_server.yml"
+
+# Backup original subscription if possible and stop the service
+- import_tasks: "{{ role_path }}/tasks/deploy_service.yml"
+
+# Backup original subscription if possible and stop the service
+- import_tasks: "{{ role_path }}/tasks/transmit_backup.yml"
+
+# Backup original subscription if possible and stop the service
+- import_tasks: "{{ role_path }}/tasks/import_database.yml"
+
+# Backup original subscription if possible and stop the service
+- import_tasks: "{{ role_path }}/tasks/re-provision_server.yml"
+
+# Backup original subscription if possible and stop the service
+- import_tasks: "{{ role_path }}/tasks/delete_token.yml"

@@ -1,0 +1,34 @@
+
+- name: Fetch 'hosting_vars.yml' to controller
+  delegate_to: "{{ awx_server }}"
+  fetch:
+    src: "/var/lib/awx/projects/hosting/hosting_vars.yml"
+    dest: "/tmp/{{ awx_server }}-hosting_vars.yml"
+    flat: yes
+
+- name: Include hosting variables from hosting_vars.yml
+  include_vars:
+    file: "/tmp/{{ awx_server }}-hosting_vars.yml"
+  no_log: True
+
+- name: Fetch 'awx_tokens.yml' to controller
+  delegate_to: "{{ awx_server }}"
+  fetch:
+    src: "/var/lib/awx/projects/hosting/awx_tokens.yml"
+    dest: "/tmp/{{ awx_server }}-awx_tokens.yml"
+    flat: yes
+
+- name: Include AWX master token from awx_tokens.yml
+  include_vars:
+    file: "/tmp/{{ awx_server }}-awx_tokens.yml"
+  no_log: True
+
+- name: Create a AWX session token for executing modules
+  awx.awx.tower_token:
+    description: 'AWX Session Token'
+    scope: "write"
+    state: present
+    tower_host: "https://{{ awx_host }}"
+    tower_oauthtoken: "{{ awx_master_token }}"
+  register: awx_session_token
+  #no_log: True

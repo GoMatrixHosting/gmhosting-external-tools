@@ -1,0 +1,16 @@
+
+# Matrix Server Variables
+matrix_domain: gomatrixhostingfuckyeah.xyz
+
+# AWX Variables
+awx_server: panel.topgunmatrix.com
+
+# Backup Server Variables
+backup_server: backup.topgunmatrix.com
+backup_directory: /mnt/mfs/GMH-Backups
+backup_extraction_directory: /mnt/mfs/GMH-Backups/extracted/
+
+# Controller Variables
+
+#Borg Backup Variables
+

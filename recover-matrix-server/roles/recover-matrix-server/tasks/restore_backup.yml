@@ -1,0 +1,135 @@
+
+- name: Check if lock_file_2 exists
+  stat: 
+    path: "/tmp/{{ matrix_domain }}_lock_2"
+  register: lock_file_2
+
+#1) Locate the borg backups password.
+
+#root@AWX7-panel:~# cat /var/lib/awx/projects/backups/stevesubway.xyz-borg_backup.yml 
+#awx_backup_encryption_passphrase: 0ba70e6786d0acc54c116c68a5a73d2c
+
+- name: Fetch '/var/lib/awx/projects/backups/{{ matrix_domain }}-borg_backup.yml'
+  delegate_to: "{{ awx_server }}"
+  fetch:
+    src: "/var/lib/awx/projects/backups/{{ matrix_domain }}-borg_backup.yml"
+    dest: "/tmp/{{ matrix_domain }}-borg_backup.yml"
+    flat: yes
+  when: lock_file_2.stat.exists == false
+
+- name: Include borg backup password from variable file
+  include_vars: "/tmp/{{ matrix_domain }}-borg_backup.yml"
+  when: lock_file_2.stat.exists == false
+
+#2) Restore backup of /matrix from borg repo:
+
+#backup_user@backup_server:~$ ls /mnt/backup-dir/Clients/stevesubway.xyz/matrix/
+#config  data  hints.17  index.17  integrity.17  nonce  README
+#backup_user@backup_server:~$ borg list /mnt/backup-dir/Clients/stevesubway.xyz/matrix/
+#Enter passphrase for key /mnt/mfs/GMH-Backups/Clients/stevesubway.xyz/matrix: 
+#...
+#stevesubway-2021-06-12T06:32:44      Sat, 2021-06-12 14:32:45 [500b3fdee79eeb7b6c087c062335260496ca83e2eb5b2d84854892b399263d54]
+#backup_user@backup_server:~$ mkdir /mnt/backup-dir/Extracted/
+#backup_user@backup_server:~$ cd /mnt/backup-dir/Extracted/
+#backup_user@backup_server:/mnt/backup-dir/extracted$ borg extract /mnt/backup-dir/Clients/stevesubway.xyz/matrix/::stevesubway-2021-06-12T06:32:44
+
+- name: Collect borg backup /matrix history for that subscription
+  delegate_to: "{{ backup_server }}"
+  shell: |
+    BORG_PASSPHRASE="{{ awx_backup_encryption_passphrase }}" borg list "{{ backup_directory }}/Clients/{{ matrix_domain }}/matrix/"
+  when: lock_file_2.stat.exists == false
+  register: borg_matrix_history
+
+- debug:
+    msg: "{{ borg_matrix_history.stdout_lines }}"
+  when: lock_file_2.stat.exists == false
+
+- debug:
+    msg: "{{ borg_matrix_history.stdout_lines | last }}"
+  when: lock_file_2.stat.exists == false
+
+# should let user pick which borg backup
+
+#    - debug:
+#        msg: "{{ item.1 }}"
+#      with_indexed_items:
+#        - "{{ borg_matrix_history.stdout_lines }}"
+
+- name: Collect borg backup /database history for that subscription
+  delegate_to: "{{ backup_server }}"
+  shell: |
+    BORG_PASSPHRASE="{{ awx_backup_encryption_passphrase }}" borg list "{{ backup_directory }}/Clients/{{ matrix_domain }}/database/"
+  when: lock_file_2.stat.exists == false
+  register: borg_database_history
+
+- debug:
+    msg: "{{ borg_database_history.stdout_lines }}"
+  when: lock_file_2.stat.exists == false
+
+- debug:
+    msg: "{{ borg_database_history.stdout_lines | last }}"
+  when: lock_file_2.stat.exists == false
+
+- name:
+  set_fact:
+    borg_backup_matrix_line: "{{ borg_matrix_history.stdout_lines | last }}"
+    borg_backup_database_line: "{{ borg_database_history.stdout_lines | last }}"
+  when: lock_file_2.stat.exists == false
+
+- debug:
+    msg: "{{ borg_backup_matrix_line }}"
+  when: lock_file_2.stat.exists == false
+
+- debug:
+    msg: '{{ borg_backup_matrix_line.split(" ")[0] }}'
+  when: lock_file_2.stat.exists == false
+
+- debug:
+    msg: "{{ borg_backup_database_line }}"
+  when: lock_file_2.stat.exists == false
+
+- debug:
+    msg: '{{ borg_backup_database_line.split(" ")[0] }}'
+  when: lock_file_2.stat.exists == false
+
+#backup_user@backup_server:~$ cd /mnt/backup-dir/extracted/
+#backup_user@backup_server:/mnt/backup-dir/extracted$ borg extract /mnt/backup-dir/Clients/absolutematrix.com/::absolutematrix-2021-03-02T12:43:48
+
+#borg extract /mnt/backup-dir/Clients/absolutematrix.com/::absolutematrix-2021-03-02T12:43:48
+
+- name: Ensure '{{ backup_extraction_directory }}/{{ matrix_domain }}' exists
+  delegate_to: "{{ backup_server }}"
+  file:
+    path: "{{ backup_extraction_directory }}/{{ matrix_domain }}"
+    recurse: yes
+    state: directory
+    mode: '0755'
+  when: lock_file_2.stat.exists == false
+
+- name: Extract borg backup /matrix history for that subscription
+  delegate_to: "{{ backup_server }}"
+  shell: |
+    cd "{{ backup_extraction_directory }}/{{ matrix_domain }}" && BORG_PASSPHRASE="{{ awx_backup_encryption_passphrase }}" borg extract "{{ backup_directory }}/Clients/{{ matrix_domain }}/matrix/::{{ borg_backup_matrix_line.split(" ")[0] }}"
+  when: lock_file_2.stat.exists == false
+  register: borg_matrix_history
+
+- name: Extract borg backup /database history for that subscription
+  delegate_to: "{{ backup_server }}"
+  shell: |
+    cd "{{ backup_extraction_directory }}/{{ matrix_domain }}" && BORG_PASSPHRASE="{{ awx_backup_encryption_passphrase }}" borg extract "{{ backup_directory }}/Clients/{{ matrix_domain }}/database/::{{ borg_backup_database_line.split(" ")[0] }}"
+  when: lock_file_2.stat.exists == false
+  register: borg_database_history
+
+- debug:
+    msg: "{{ borg_matrix_history }}"
+  when: lock_file_2.stat.exists == false
+
+- debug:
+    msg: "{{ borg_database_history }}"
+  when: lock_file_2.stat.exists == false
+
+- name: Create lock_file_2
+  file:
+    path: /tmp/{{ matrix_domain }}_lock_2
+    state: touch
+  when: lock_file_2.stat.exists == false
