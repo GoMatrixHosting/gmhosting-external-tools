@@ -42,8 +42,22 @@
     flat: yes
   when: lock_file_6.stat.exists == false
 
+# controller doesn't know how to each this yet :) [external step]
+
+- name: Update SSH config on backup server
+  blockinfile:
+    path: '/home/{{ ansible_user_id }}/.ssh/config'
+    create: yes
+    block: |
+      Host {{ server_ipv4 }}
+          HostName {{ server_ipv4 }}
+          Port 22
+          User root
+          IdentityFile {{ client_public_ssh_key }}
+  when: lock_file_6.stat.exists == false
+
 - name: Set the new authorized key taken from '{{ matrix_domain }}_recovery.pub' file
-  delegate_to: "{{ server_ip4 }}"
+  delegate_to: "{{ server_ipv4 }}"
   authorized_key:
     user: root
     state: present
@@ -60,7 +74,7 @@
   when: lock_file_6.stat.exists == false
 
 - name: Install Rsync onto new Matrix server
-  delegate_to: "{{ server_ip4 }}"
+  delegate_to: "{{ server_ipv4 }}"
   apt:
     name: rsync
   when: lock_file_6.stat.exists == false
@@ -72,7 +86,7 @@
     create: yes
     block: |
       Host matrix.{{ matrix_domain }}
-          HostName {{ server_ip4 }}
+          HostName {{ server_ipv4 }}
           Port 22
           User root
           IdentityFile /tmp/{{ matrix_domain }}_recovery
@@ -81,13 +95,13 @@
 - name: Rsync ./matrix/ to the new Matrix server
   delegate_to: "{{ backup_server }}"
   command: |
-    rsync -av {{ backup_extraction_directory }}/{{ matrix_domain }}/matrix/ matrix.{{ matrix_domain }}:/matrix/
+    rsync -e "ssh -o StrictHostKeyChecking=no" -av {{ backup_extraction_directory }}/{{ matrix_domain }}/matrix/ matrix.{{ matrix_domain }}:/matrix/
   when: lock_file_6.stat.exists == false
 
 - name: Rsync ./chroot/ to the new Matrix server
   delegate_to: "{{ backup_server }}"
   command: |
-    rsync -av {{ backup_extraction_directory }}/{{ matrix_domain }}/chroot/ matrix.{{ matrix_domain }}:/chroot/
+    rsync -e "ssh -o StrictHostKeyChecking=no" -av {{ backup_extraction_directory }}/{{ matrix_domain }}/chroot/ matrix.{{ matrix_domain }}:/chroot/
   when: lock_file_6.stat.exists == false
 
 - name: Create lock_file_6

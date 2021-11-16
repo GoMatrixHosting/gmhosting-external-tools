@@ -1,31 +1,31 @@
 
-# Backup original subscription if possible and stop the service
+# Create AWX token for executing modules
 - import_tasks: "{{ role_path }}/tasks/create_token.yml"
 
 # Backup original subscription if possible and stop the service
 - import_tasks: "{{ role_path }}/tasks/backup_server.yml"
   #tags: always
 
-# Backup original subscription if possible and stop the service
+# Restore the latest backup to the backup servers extraction directory
 - import_tasks: "{{ role_path }}/tasks/restore_backup.yml"
 
-# Backup original subscription if possible and stop the service
+# Create a new subscription for the recovered server
 - import_tasks: "{{ role_path }}/tasks/create_subscription.yml"
 
-# Backup original subscription if possible and stop the service
+# Provision the new server with the same settings
 - import_tasks: "{{ role_path }}/tasks/provision_server.yml"
 
-# Backup original subscription if possible and stop the service
+# Deploy the server without letsencrypt renewal
 - import_tasks: "{{ role_path }}/tasks/deploy_service.yml"
 
-# Backup original subscription if possible and stop the service
+# Rsync the backup from the backup server to the recovered server
 - import_tasks: "{{ role_path }}/tasks/transmit_backup.yml"
 
-# Backup original subscription if possible and stop the service
+# Import the database dump to the recovered server
 - import_tasks: "{{ role_path }}/tasks/import_database.yml"
 
-# Backup original subscription if possible and stop the service
+# Reprovision the new server to populate the surveys
 - import_tasks: "{{ role_path }}/tasks/re-provision_server.yml"
 
-# Backup original subscription if possible and stop the service
+# Delete AWX token for executing modules
 - import_tasks: "{{ role_path }}/tasks/delete_token.yml"

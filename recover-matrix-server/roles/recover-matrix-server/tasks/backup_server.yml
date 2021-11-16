@@ -23,7 +23,7 @@
   when: lock_file_1.stat.exists == false
 
 - name: SSH into the old server and shut down the previous service
-  delegate_to: "matrix.{{ matrix_domain }}"
+  delegate_to: "{{ old_server_ip }}"
   command: |
     systemctl stop matrix-synapse matrix-postgres matrix-ma1sd
   when: lock_file_1.stat.exists == false

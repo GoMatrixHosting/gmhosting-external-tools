@@ -1,5 +1,5 @@
 {
-  "server_path_postgres_dump": "{{ server_path_postgres_dump.stdout }}",
+  "server_path_postgres_dump": "/chroot/export/{{ server_path_postgres_dump.stdout_lines[0] }}",
   "subscription_id": "{{ new_subscription_id }}",
   "member_id": "{{ member_id }}",
   "target": "matrix.{{ matrix_domain }}",

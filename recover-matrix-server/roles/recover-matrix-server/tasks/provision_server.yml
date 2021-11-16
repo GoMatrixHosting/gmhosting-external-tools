@@ -30,7 +30,7 @@
 - name: Move the subscriptions backup directory if unmoved
   delegate_to: "{{ backup_server }}"
   command: mv "{{ backup_directory }}/Clients/{{ matrix_domain }}" "{{ backup_directory }}/Clients/{{ matrix_domain }}-old"
-  when: ( subscription_backup_directory.stat.exists ) and ( lock_file_4.stat.exists == false )
+  when: ( subscription_backup_directory.stat.exists is defined ) and ( subscription_backup_directory.stat.exists ) and ( lock_file_4.stat.exists == false )
 
 
 #8) Remove the 'imposter-check' tag from 'Provision a New Server', then run the template with these survey answers:
@@ -77,6 +77,30 @@
     dest: '/tmp/{{ matrix_domain }}_provision_survey_on-premises.json'
   when: ( subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
 
+- name: Add server_ipv4 line to provision_survey_on-premises.json
+  delegate_to: 127.0.0.1
+  lineinfile:
+    path: '/tmp/{{ matrix_domain }}_provision_survey_on-premises.json'
+    insertafter: '^{'
+    line: "  {{ item.key }}: {{ item.value }}"
+    mode: '0600'
+    state: present
+  with_dict:
+    'server_ipv4': '"{{ server_ipv4 }}"'
+  when: ( server_ipv4 is defined ) and ( server_ipv4 | trim | length > 0 ) and ( subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
+
+- name: Add server_ipv6 line to provision_survey_on-premises.json
+  delegate_to: 127.0.0.1
+  lineinfile:
+    path: '/tmp/{{ matrix_domain }}_provision_survey_on-premises.json'
+    insertafter: '^{'
+    line: "  {{ item.key }}: {{ item.value }}"
+    mode: '0600'
+    state: present
+  with_dict:
+    'server_ipv6': '"{{ server_ipv6 }}"'
+  when: ( server_ipv6 is defined ) and ( server_ipv6 | trim | length > 0 ) and ( subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
+
 - name: Remove imposter-check tag from 'Provision a New Server' job template
   awx.awx.tower_job_template:
     name: "0 - {{ new_subscription_id }} - Provision a New Server"
@@ -119,10 +143,10 @@
     validate_certs: yes
   when: ( subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
 
-- name: Disallow team from executing the 'Provision a New Server' job_template
+- name: Disallow team from executing the new 'Provision a New Server' job_template
   awx.awx.tower_role:
     team: "{{ member_id }}"
-    job_template: "0 - {{ subscription_id }} - Provision a New Server"
+    job_template: "0 - {{ new_subscription_id }} - Provision a New Server"
     role: execute
     state: absent
     tower_host: "https://{{ awx_host }}"
@@ -134,7 +158,7 @@
 - name: Allow team to view the new 'Provision a New Server' job_template
   awx.awx.tower_role:
     team: "{{ member_id }}"
-    job_template: "0 - {{ subscription_id }} - Provision a New Server"
+    job_template: "0 - {{ new_subscription_id }} - Provision a New Server"
     role: read
     state: present
     tower_host: "https://{{ awx_host }}"
@@ -145,19 +169,21 @@
 
 - name: Launch provision job template on AWX
   awx.awx.tower_job_launch:
-    job_template: "0 - {{ subscription_id }} - Provision a New Server"
-    extra_vars: "{{ lookup('file', '/tmp/{{ matrix_domain }}_provision_server_extra-vars.json') }}"
+    job_template: "0 - {{ new_subscription_id }} - Provision a New Server"
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
-  when: ( not matrix_domain_file.stat.exists ) and ( lock_file_4.stat.exists == false )
+  when: lock_file_4.stat.exists == false
   register: provision_job_1
 
 - name: Wait for job max 900s (15m)
   awx.awx.tower_job_wait:
     job_id: "{{ provision_job_1.id }}"
     timeout: 900
-  when: ( not matrix_domain_file.stat.exists ) and ( lock_file_4.stat.exists == false )
+    tower_host: "https://{{ awx_host }}"
+    tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+    validate_certs: yes
+  when: lock_file_4.stat.exists == false
 
 - name: Create lock_file_4
   file:

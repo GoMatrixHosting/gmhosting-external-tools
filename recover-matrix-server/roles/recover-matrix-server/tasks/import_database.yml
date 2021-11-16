@@ -16,11 +16,11 @@
 #bash-5.1$ createdb --template=template0 --encoding=UTF8 --locale=C synapse
 
 - name: Delete and re-create existing databases
-  delegate_to: "{{ server_ip4 }}"
+  delegate_to: "{{ server_ipv4 }}"
   command: "{{ item }}"
   with_items:
-    - docker exec -it matrix-postgres /bin/bash -c 'dropdb matrix'
-    - docker exec -it matrix-postgres /bin/bash -c 'dropdb matrix_ma1sd'
+    - docker exec -it matrix-postgres /bin/bash -c 'dropdb -f matrix'
+    - docker exec -it matrix-postgres /bin/bash -c 'dropdb -f matrix_ma1sd'
     - docker exec -it matrix-postgres /bin/bash -c 'dropdb -f synapse'
     - docker exec -it matrix-postgres /bin/bash -c 'createdb --template=template0 --encoding=UTF8 --locale=C matrix'
     - docker exec -it matrix-postgres /bin/bash -c 'createdb --template=template0 --encoding=UTF8 --locale=C matrix_ma1sd'
@@ -49,10 +49,10 @@
 
 # collect   "server_path_postgres_dump": "/chroot/export/postgres_2021-03-02.sql.gz"
 
-- name: Rsync ./chroot/ to the new Matrix server
-  delegate_to: "{{ server_ip4 }}"
+- name: Collect list of postgresql dumps, with the most recent being listed first
+  delegate_to: "{{ server_ipv4 }}"
   command: |
-    ls /chroot/export/postgres_*
+    ls -r1 /chroot/export/
   when: lock_file_7.stat.exists == false
   register: server_path_postgres_dump
 
@@ -72,13 +72,13 @@
     job_type: run
     inventory: "{{ member_id }}"
     project: "{{ member_id }} - Matrix Docker Ansible Deploy"
-    playbook: create.yml
+    playbook: setup.yml
     extra_vars: "{{ lookup('file', '/tmp/{{ matrix_domain }}_restore-and-import-postgresql-dump.json') }}"
     ask_extra_vars: yes
     state: present
     verbosity: 1
     job_tags: import-postgres, import-awx
-    tower_host: "https://{{ awx_url }}"
+    tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
   when: lock_file_7.stat.exists == false
@@ -99,6 +99,9 @@
   awx.awx.tower_job_wait:
     job_id: "{{ import_job.id }}"
     timeout: 900
+    tower_host: "https://{{ awx_host }}"
+    tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+    validate_certs: yes
   when: lock_file_7.stat.exists == false
 
 - name: Create lock_file_7

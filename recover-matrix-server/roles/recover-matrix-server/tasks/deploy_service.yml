@@ -30,7 +30,7 @@
 - name: Clear known_hosts entry in AWX for that particular server
   delegate_to: "{{ awx_server }}"
   command: |
-    docker exec -i -t awx_task bash ssh-keygen -R matrix.{{ matrix_domain }}
+    docker exec -i -t awx_task bash -c 'ssh-keygen -R matrix.{{ matrix_domain }}'
   when: lock_file_5.stat.exists == false
 
 #11) Note the IP address generated during provision. Add new known_hosts record for the homeserver address:
@@ -54,7 +54,7 @@
 - name: Add new known_hosts record for the homeserver address.
   delegate_to: "{{ awx_server }}"
   command: |
-    docker exec -i -t awx_task bash echo -e '# Custom DNS records for matrix.{{ matrix_domain }}\n{{ server_ip4 }} {{ matrix_domain }}\n{{ server_ip4 }} matrix.{{ matrix_domain }}\n{{ server_ip4 }} element.{{ matrix_domain }}\n{{ server_ip4 }} jitsi.{{ matrix_domain }}' >> /etc/hosts
+    docker exec -i -t awx_task bash echo -e '# Custom DNS records for matrix.{{ matrix_domain }}\n{{ server_ipv4 }} {{ matrix_domain }}\n{{ server_ipv4 }} matrix.{{ matrix_domain }}\n{{ server_ipv4 }} element.{{ matrix_domain }}\n{{ server_ipv4 }} jitsi.{{ matrix_domain }}' >> /etc/hosts
   when: lock_file_5.stat.exists == false
 
 
@@ -118,7 +118,6 @@
 - name: Launch deploy job template on AWX
   awx.awx.tower_job_launch:
     job_template: "{{ matrix_domain }} - 0 - Deploy/Update a Server"
-    extra_vars: "{{ lookup('file', '/tmp/{{ matrix_domain }}-new_extra_vars.json') }}"
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
@@ -129,6 +128,9 @@
   awx.awx.tower_job_wait:
     job_id: "{{ deploy_job.id }}"
     timeout: 900
+    tower_host: "https://{{ awx_host }}"
+    tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+    validate_certs: yes
   when: lock_file_5.stat.exists == false
 
 - name: Create lock_file_5

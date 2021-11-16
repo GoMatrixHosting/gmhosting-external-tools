@@ -51,22 +51,23 @@
     validate_certs: yes
   when: ( subscription_type == "on-premises" ) and ( lock_file_8.stat.exists == false )
 
-- name: Launch provision job template on AWX
+- name: Launch provision job template again on AWX to fill surveys
   awx.awx.tower_job_launch:
-    job_template: "0 - {{ subscription_id }} - Provision a New Server"
-    extra_vars: "{{ lookup('file', '/tmp/{{ matrix_domain }}_provision_server_extra-vars.json') }}"
+    job_template: "0 - {{ new_subscription_id }} - Provision a New Server"
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
-  when: ( not matrix_domain_file.stat.exists ) and ( lock_file_8.stat.exists == false )
+  when: lock_file_8.stat.exists == false
   register: provision_job_2
 
 - name: Wait for job max 900s (15m)
   awx.awx.tower_job_wait:
     job_id: "{{ provision_job_2.id }}"
     timeout: 900
-  when: ( not matrix_domain_file.stat.exists ) and ( lock_file_8.stat.exists == false )
-
+    tower_host: "https://{{ awx_host }}"
+    tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+    validate_certs: yes
+  when: lock_file_8.stat.exists == false
 
 
 #17) Copy the DNS information and send it to the customer so they can configure DNS again. For Example:

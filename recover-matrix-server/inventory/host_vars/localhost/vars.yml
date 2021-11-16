@@ -1,6 +1,7 @@
 
 # Matrix Server Variables
-matrix_domain: gomatrixhostingfuckyeah.xyz
+matrix_domain: gomatrixhostingisawesome.xyz
+old_server_ip: 128.199.235.90
 
 # AWX Variables
 awx_server: panel.topgunmatrix.com
@@ -10,7 +11,5 @@ backup_server: backup.topgunmatrix.com
 backup_directory: /mnt/mfs/GMH-Backups
 backup_extraction_directory: /mnt/mfs/GMH-Backups/extracted/
 
-# Controller Variables
-
-#Borg Backup Variables
-
+# Transmit Variabes
+client_public_ssh_key: '~/.ssh/matrixtesting6_ed25519.pub'
