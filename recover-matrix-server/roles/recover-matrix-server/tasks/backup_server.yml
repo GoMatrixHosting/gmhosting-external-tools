@@ -4,6 +4,24 @@
     path: "/tmp/{{ matrix_domain }}_lock_1"
   register: lock_file_1
 
+- name: Launch stop job template on AWX
+  awx.awx.tower_job_launch:
+    job_template: "{{ matrix_domain }} - 0 - Stop all Services"
+    tower_host: "https://{{ awx_host }}"
+    tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+    validate_certs: yes
+  when: lock_file_1.stat.exists == false
+  register: stop_job
+
+- name: Wait for job max 3 minutes
+  awx.awx.tower_job_wait:
+    job_id: "{{ stop_job.id }}"
+    timeout: 180
+    tower_host: "https://{{ awx_host }}"
+    tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+    validate_certs: yes
+  when: lock_file_1.stat.exists == false
+
 - name: Launch backup job template on AWX
   awx.awx.tower_job_launch:
     job_template: "{{ matrix_domain }} - 0 - Backup Server"
@@ -21,14 +39,6 @@
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
   when: lock_file_1.stat.exists == false
-
-- name: SSH into the old server and shut down the previous service
-  delegate_to: "{{ old_server_ip }}"
-  command: |
-    systemctl stop matrix-synapse matrix-postgres matrix-ma1sd
-  when: lock_file_1.stat.exists == false
-
-# ^ should we use Stop template instead?
 
 - name: Create lock_file_1
   file:

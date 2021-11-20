@@ -25,6 +25,28 @@ Host 128.199.235.90
 - wait for DNS to propogate
 - deploy again!
 
+# Starting again:
+
+To start from the beginning:
+1) move the backup back in place:
+```
+$ ssh backup.topgunmatrix.com 
+...
+root@backup:~# mv /mnt/mfs/GMH-Backups/Clients/gomatrixhostingisawesome.xyz-old/ /mnt/mfs/GMH-Backups/Clients/gomatrixhostingisawesome.xyz
+```
+2) delete temp files on controller:
+```
+$ ls /tmp/gomatrixhostingisawesome.xyz*
+/tmp/gomatrixhostingisawesome.xyz-borg_backup.yml  /tmp/gomatrixhostingisawesome.xyz_lock_3
+/tmp/gomatrixhostingisawesome.xyz-extra_vars.json  /tmp/gomatrixhostingisawesome.xyz-matrix_vars.yml
+/tmp/gomatrixhostingisawesome.xyz_lock_1           /tmp/gomatrixhostingisawesome.xyz-organisation.yml
+/tmp/gomatrixhostingisawesome.xyz_lock_2           /tmp/gomatrixhostingisawesome.xyz-server_vars.yml
+$ rm /tmp/gomatrixhostingisawesome.xyz*
+```
+3) delete the domains inventory file:
+```
+/recover-matrix-server$ rm ./inventory/gomatrixhostingisawesome.xyz.yml
+```
 
 
 # Issues:

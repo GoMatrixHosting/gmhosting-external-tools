@@ -1,7 +1,7 @@
 
 # Matrix Server Variables
-matrix_domain: gomatrixhostingisawesome.xyz
-old_server_ip: 128.199.235.90
+matrix_domain: aveng.xyz
+old_server_ip: 206.189.236.93
 
 # AWX Variables
 awx_server: panel.topgunmatrix.com

@@ -52,53 +52,53 @@
     file: './inventory/{{ matrix_domain }}.yml'
   when: matrix_domain_file.stat.exists
 
-- name: Template new 'provision_server_template.json' extra variables
+- name: Template new 'provision_server_extra-vars.json' variable file
   template:
     src: './extra-vars/digitalocean_provision_server_extra-vars.json.j2'
     dest: '/tmp/{{ matrix_domain }}_provision_server_extra-vars.json'
   when: ( subscription_type == "digitalocean" ) and ( lock_file_4.stat.exists == false )
 
-- name: Template new 'provision_server_template.json' extra variables
+- name: Template new 'provision_server_extra-vars.json' variable file
   template:
     src: './extra-vars/on_premises_provision_server_extra-vars.json.j2'
     dest: '/tmp/{{ matrix_domain }}_provision_server_extra-vars.json'
   when: ( subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
 
 
-- name: Save new 'Provision Server' survey.json to the AWX tower, template
-  template:
-    src: './surveys/provision_survey_digitalocean.json.j2'
-    dest: '/tmp/{{ matrix_domain }}_provision_survey_digitalocean.json'
-  when: ( subscription_type == "digitalocean" ) and ( lock_file_4.stat.exists == false )
+#- name: Save new 'Provision Server' survey.json to the AWX tower, template
+#  template:
+#    src: './surveys/provision_survey_digitalocean.json.j2'
+#    dest: '/tmp/{{ matrix_domain }}_provision_survey_digitalocean.json'
+#  when: ( subscription_type == "digitalocean" ) and ( lock_file_4.stat.exists == false )
 
-- name: Save new 'Provision Server' survey.json to the AWX tower, template
-  template:
-    src: './surveys/provision_survey_on-premises.json.j2'
-    dest: '/tmp/{{ matrix_domain }}_provision_survey_on-premises.json'
-  when: ( subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
+#- name: Save new 'Provision Server' survey.json to the AWX tower, template
+#  template:
+#    src: './surveys/provision_survey_on-premises.json.j2'
+#    dest: '/tmp/{{ matrix_domain }}_provision_survey_on-premises.json'
+#  when: ( subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
 
-- name: Add server_ipv4 line to provision_survey_on-premises.json
+- name: Add server_ipv4 line to provision_server_extra-vars.json
   delegate_to: 127.0.0.1
   lineinfile:
-    path: '/tmp/{{ matrix_domain }}_provision_survey_on-premises.json'
+    path: '/tmp/{{ matrix_domain }}_provision_server_extra-vars.json'
     insertafter: '^{'
-    line: "  {{ item.key }}: {{ item.value }}"
+    line: '  "{{ item.key }}": "{{ item.value }}",'
     mode: '0600'
     state: present
   with_dict:
-    'server_ipv4': '"{{ server_ipv4 }}"'
+    'server_ipv4': '{{ server_ipv4 }}'
   when: ( server_ipv4 is defined ) and ( server_ipv4 | trim | length > 0 ) and ( subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
 
-- name: Add server_ipv6 line to provision_survey_on-premises.json
+- name: Add server_ipv6 line to provision_server_extra-vars.json
   delegate_to: 127.0.0.1
   lineinfile:
-    path: '/tmp/{{ matrix_domain }}_provision_survey_on-premises.json'
+    path: '/tmp/{{ matrix_domain }}_provision_server_extra-vars.json'
     insertafter: '^{'
-    line: "  {{ item.key }}: {{ item.value }}"
+    line: '  "{{ item.key }}": "{{ item.value }}",'
     mode: '0600'
     state: present
   with_dict:
-    'server_ipv6': '"{{ server_ipv6 }}"'
+    'server_ipv6': '{{ server_ipv6 }}'
   when: ( server_ipv6 is defined ) and ( server_ipv6 | trim | length > 0 ) and ( subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
 
 - name: Remove imposter-check tag from 'Provision a New Server' job template
@@ -111,8 +111,8 @@
     project: "{{ member_id }} - Ansible Provision Server"
     playbook: setup.yml
     credential: "{{ member_id }} - AWX SSH Key"
-    survey_enabled: true
-    survey_spec: "{{ lookup('file', '/tmp/{{ matrix_domain }}_provision_survey_digitalocean.json') }}"
+    survey_enabled: false
+    #survey_spec: "{{ lookup('file', '/tmp/{{ matrix_domain }}_provision_survey_digitalocean.json') }}"
     state: present
     verbosity: 1
     job_tags: setup-firewall, setup-mailgun, setup-export, setup-backup
@@ -132,8 +132,8 @@
     project: "{{ member_id }} - Ansible Provision Server"
     playbook: setup.yml
     credential: "{{ member_id }} - AWX SSH Key"
-    survey_enabled: true
-    survey_spec: "{{ lookup('file', '/tmp/{{ matrix_domain }}_provision_survey_on-premises.json') }}"
+    survey_enabled: false
+    #survey_spec: "{{ lookup('file', '/tmp/{{ matrix_domain }}_provision_survey_on-premises.json') }}"
     state: present
     verbosity: 1
     job_tags: setup-firewall, setup-mailgun, setup-export, setup-backup
