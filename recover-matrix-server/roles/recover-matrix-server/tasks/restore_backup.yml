@@ -15,11 +15,11 @@
     src: "/var/lib/awx/projects/backups/{{ matrix_domain }}-borg_backup.yml"
     dest: "/tmp/{{ matrix_domain }}-borg_backup.yml"
     flat: yes
-  when: ( lock_file_2.stat.exists == false ) or ( view_borg_backup == true )
+  when: ( lock_file_2.stat.exists == false ) or ( view_borg_backup | bool )
 
 - name: Include borg backup password from variable file
   include_vars: "/tmp/{{ matrix_domain }}-borg_backup.yml"
-  when: ( lock_file_2.stat.exists == false ) or ( view_borg_backup == true )
+  when: ( lock_file_2.stat.exists == false ) or ( view_borg_backup | bool )
 
 #2) Restore backup of /matrix from borg repo:
 
@@ -37,58 +37,58 @@
   delegate_to: "{{ backup_server }}"
   shell: |
     BORG_PASSPHRASE="{{ awx_backup_encryption_passphrase }}" borg list "{{ backup_directory }}/Clients/{{ matrix_domain }}/matrix/"
-  when: lock_file_2.stat.exists == false
-  register: ( borg_matrix_history ) or ( view_borg_backup == true )
+  when: ( lock_file_2.stat.exists == false ) or ( view_borg_backup | bool )
+  register: borg_matrix_history
 
-- debug:
-    msg: "{{ borg_matrix_history.stdout_lines }}"
-  when: ( lock_file_2.stat.exists == false ) or ( view_borg_backup == true )
 
-- debug:
-    msg: "{{ borg_matrix_history.stdout_lines | last }}"
-  when: ( lock_file_2.stat.exists == false ) or ( view_borg_backup == true )
 
 # should let user pick which borg backup
-
-#    - debug:
-#        msg: "{{ item.1 }}"
-#      with_indexed_items:
-#        - "{{ borg_matrix_history.stdout_lines }}"
 
 - name: Collect borg backup /database history for that subscription
   delegate_to: "{{ backup_server }}"
   shell: |
     BORG_PASSPHRASE="{{ awx_backup_encryption_passphrase }}" borg list "{{ backup_directory }}/Clients/{{ matrix_domain }}/database/"
-  when: ( lock_file_2.stat.exists == false ) or ( view_borg_backup == true )
+  when: ( lock_file_2.stat.exists == false ) or ( view_borg_backup | bool )
   register: borg_database_history
 
-- debug:
-    msg: "{{ borg_database_history.stdout_lines }}"
-  when: ( lock_file_2.stat.exists == false ) or ( view_borg_backup == true )
+- name: Print borg backup history for /matrix
+  debug:
+    msg: "{{ borg_matrix_history.stdout_lines }}"
+  when: ( lock_file_2.stat.exists == false ) or ( view_borg_backup | bool )
 
-- debug:
-    msg: "{{ borg_database_history.stdout_lines | last }}"
-  when: ( lock_file_2.stat.exists == false ) or ( view_borg_backup == true )
+- name: Print borg backup history for /database
+  debug:
+    msg: "{{ borg_database_history.stdout_lines }}"
+  when: ( lock_file_2.stat.exists == false ) or ( view_borg_backup | bool )
+
+
 
 - name: Set boolean value to exit playbook
   set_fact:
     awx_end_playbook: true
-  when: view_borg_backup == true
-
-- name: Result
-  debug: msg="{{ awx_cmd_output.stdout }}"
-  when: view_borg_backup == true
+  when: view_borg_backup | bool
 
 - name: End playbook if this task list is called.
   meta: end_play
-  when: awx_end_playbook is defined and awx_end_playbook|bool
-  when: view_borg_backup == true
+  when: ( awx_end_playbook is defined ) and ( awx_end_playbook | bool ) and ( view_borg_backup | bool )
+
+
+#- name: Print borg backup history for /database
+#  debug:
+#    msg: "{{ borg_database_history.stdout_lines | last }}"
+#  when: ( lock_file_2.stat.exists == false ) or ( view_borg_backup | bool )
+
+- name:
+  set_fact:
+    borg_backup_matrix_line: "{{ borg_backup_matrix_input | trim }}"
+    borg_backup_database_line: "{{ borg_backup_database_input | trim }}"
+  when: ( lock_file_2.stat.exists == false ) and ( borg_backup_matrix_input | trim | length > 0 ) and ( borg_backup_database_input | trim | length > 0 )
 
 - name:
   set_fact:
     borg_backup_matrix_line: "{{ borg_matrix_history.stdout_lines | last }}"
     borg_backup_database_line: "{{ borg_database_history.stdout_lines | last }}"
-  when: lock_file_2.stat.exists == false
+  when: ( lock_file_2.stat.exists == false ) and ( borg_backup_matrix_input | trim | length = 0 ) and ( borg_backup_database_input | trim | length == 0 )
 
 - debug:
     msg: "{{ borg_backup_matrix_line }}"

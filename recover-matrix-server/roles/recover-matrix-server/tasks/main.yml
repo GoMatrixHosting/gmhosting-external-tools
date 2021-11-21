@@ -1,10 +1,11 @@
 
 # Create AWX token for executing modules
 - import_tasks: "{{ role_path }}/tasks/create_token.yml"
-
+  when: not view_borg_backup | bool
+  
 # Backup original subscription if possible and stop the service
 - import_tasks: "{{ role_path }}/tasks/backup_server.yml"
-  #tags: always
+  when: not view_borg_backup | bool
 
 # Restore the latest backup to the backup servers extraction directory
 - import_tasks: "{{ role_path }}/tasks/restore_backup.yml"

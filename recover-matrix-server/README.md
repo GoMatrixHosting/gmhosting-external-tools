@@ -18,9 +18,43 @@ Host 128.199.235.90
 
 2) Edit the variables in `./inventory/hosts/localhost/vars.yml` for this recovery job.
 
-3) Run the playbook:
+3) List borg backups for that server:
+`$ ansible-playbook -v -i ./inventory/hosts --extra-vars "view_borg_backup=true" recover_server_1.yml`
+
+4) Observe the output, if you don't want the latest backup to be restored then copy the lines you want to recover:
+
+```
+TASK [recover-matrix-server : Print borg backup history for /matrix] ***********************************************************************************************************
+Sunday 21 November 2021  09:32:19 +0800 (0:00:00.775)       0:00:14.154 ******* 
+ok: [localhost] => {
+    "msg": [
+        "T-6HAX1LZIJHX9-aveng-2021-11-19T02:08:20 Fri, 2021-11-19 10:08:24 [b4a5ed078e228d3ad0c24458305e3dba49e38752418db46e9c18d66875266348]",
+        "T-6HAX1LZIJHX9-aveng-2021-11-20T10:23:46 Sat, 2021-11-20 18:23:51 [01075b0015a7c1aff02e511fdacabc7d4ed73d4cd7e0f7d61788cc405257733b]",
+        "T-6HAX1LZIJHX9-aveng-2021-11-21T00:02:25 Sun, 2021-11-21 08:02:30 [8b02b290700a419acca73b696808606eef37691272a54c5e1d0b93bd070a902e]"
+    ]
+}
+
+TASK [recover-matrix-server : Print borg backup history for /database] *********************************************************************************************************
+Sunday 21 November 2021  09:32:19 +0800 (0:00:00.037)       0:00:14.191 ******* 
+ok: [localhost] => {
+    "msg": [
+        "T-6HAX1LZIJHX9-aveng-2021-11-19T02:08:51 Fri, 2021-11-19 10:08:56 [056cc8a0a8d68b182cce2496ebecae2ea31763ae9411877f3bc1993b806e2325]",
+        "T-6HAX1LZIJHX9-aveng-2021-11-20T10:24:12 Sat, 2021-11-20 18:24:17 [9d2ffcb1c878b60619d6871c72ee04542077a6c31232ccd0e91300705e607bb7]",
+        "T-6HAX1LZIJHX9-aveng-2021-11-21T00:03:03 Sun, 2021-11-21 08:03:08 [6b7138917fa4b4071e28fbfe6d77e5cb9ba860633e19341e3eda3e8ccaa5492c]"
+    ]
+}
+```
+
+5A) Run the playbook and recover the latest backup:
 `$ ansible-playbook -v -i ./inventory/hosts recover_server_1.yml`
 
+5B) Run the playbook and recover a specific backup:
+```
+$ ansible-playbook -v -i ./inventory/hosts \
+--extra-vars 'borg_backup_matrix_input="T-6HAX1LZIJHX9-aveng-2021-11-20T10:23:46 Sat, 2021-11-20 18:23:51 [01075b0015a7c1aff02e511fdacabc7d4ed73d4cd7e0f7d61788cc405257733b]" \
+borg_backup_database_input="T-6HAX1LZIJHX9-aveng-2021-11-20T10:24:12 Sat, 2021-11-20 18:24:17 [9d2ffcb1c878b60619d6871c72ee04542077a6c31232ccd0e91300705e607bb7]"' \
+recover_server_1.yml
+```
 
 - wait for DNS to propogate
 - deploy again!
