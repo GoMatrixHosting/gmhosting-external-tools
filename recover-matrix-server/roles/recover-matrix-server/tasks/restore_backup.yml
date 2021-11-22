@@ -88,7 +88,7 @@
   set_fact:
     borg_backup_matrix_line: "{{ borg_matrix_history.stdout_lines | last }}"
     borg_backup_database_line: "{{ borg_database_history.stdout_lines | last }}"
-  when: ( lock_file_2.stat.exists == false ) and ( borg_backup_matrix_input | trim | length = 0 ) and ( borg_backup_database_input | trim | length == 0 )
+  when: ( lock_file_2.stat.exists == false ) and ( borg_backup_matrix_input | trim | length == 0 ) and ( borg_backup_database_input | trim | length == 0 )
 
 - debug:
     msg: "{{ borg_backup_matrix_line }}"
@@ -111,7 +111,7 @@
 
 #borg extract /mnt/backup-dir/Clients/absolutematrix.com/::absolutematrix-2021-03-02T12:43:48
 
-- name: Ensure '{{ backup_extraction_directory }}/{{ matrix_domain }}' exists
+- name: Ensure '{{ backup_extraction_directory }}{{ matrix_domain }}' exists
   delegate_to: "{{ backup_server }}"
   file:
     path: "{{ backup_extraction_directory }}/{{ matrix_domain }}"

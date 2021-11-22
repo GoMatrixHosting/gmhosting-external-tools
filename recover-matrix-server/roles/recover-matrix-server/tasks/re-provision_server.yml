@@ -9,6 +9,18 @@
 #16) Remove the 'imposter-check' tag again and run 'Provision a New Server' again to load up the surveys from matrix_vars.yml
 
 
+- name: Save new 'Provision Server' survey.json to the AWX tower, template
+  template:
+    src: './surveys/provision_survey_digitalocean.json.j2'
+    dest: '/tmp/{{ matrix_domain }}_provision_survey_digitalocean.json'
+  when: ( subscription_type == "digitalocean" ) and ( lock_file_8.stat.exists == false )
+
+- name: Save new 'Provision Server' survey.json to the AWX tower, template
+  template:
+    src: './surveys/provision_survey_on-premises.json.j2'
+    dest: '/tmp/{{ matrix_domain }}_provision_survey_on-premises.json'
+  when: ( subscription_type == "on_premises" ) and ( lock_file_8.stat.exists == false )
+
 - name: Remove imposter-check tag from 'Provision a New Server' job template
   awx.awx.tower_job_template:
     name: "0 - {{ new_subscription_id }} - Provision a New Server"

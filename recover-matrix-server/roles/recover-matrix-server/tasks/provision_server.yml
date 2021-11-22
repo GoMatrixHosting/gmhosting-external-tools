@@ -65,17 +65,6 @@
   when: ( subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
 
 
-#- name: Save new 'Provision Server' survey.json to the AWX tower, template
-#  template:
-#    src: './surveys/provision_survey_digitalocean.json.j2'
-#    dest: '/tmp/{{ matrix_domain }}_provision_survey_digitalocean.json'
-#  when: ( subscription_type == "digitalocean" ) and ( lock_file_4.stat.exists == false )
-
-#- name: Save new 'Provision Server' survey.json to the AWX tower, template
-#  template:
-#    src: './surveys/provision_survey_on-premises.json.j2'
-#    dest: '/tmp/{{ matrix_domain }}_provision_survey_on-premises.json'
-#  when: ( subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
 
 - name: Add server_ipv4 line to provision_server_extra-vars.json
   delegate_to: 127.0.0.1

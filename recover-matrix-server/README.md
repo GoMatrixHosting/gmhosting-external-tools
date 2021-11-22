@@ -45,7 +45,7 @@ ok: [localhost] => {
 }
 ```
 
-5A) Run the playbook and recover the latest backup:
+5A) Run the playbook and recover the latest backup (made after the servers shutdown by this playbook):
 `$ ansible-playbook -v -i ./inventory/hosts recover_server_1.yml`
 
 5B) Run the playbook and recover a specific backup:
