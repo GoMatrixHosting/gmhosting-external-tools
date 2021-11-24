@@ -56,8 +56,17 @@ borg_backup_database_input="T-6HAX1LZIJHX9-aveng-2021-11-20T10:24:12 Sat, 2021-1
 recover_server_1.yml
 ```
 
-- wait for DNS to propogate
-- deploy again!
+6) Alter the DNS record and wait for it to propagate.
+
+
+7) Run the new '0 - Deploy/Update a Server' job template again, then try and login.
+
+
+8) If the new Matrix server works delete the old subscription with '00 - Ansible Delete Subscription', then re-provision the new subscription using 'Provision a New Server'.
+
+
+9) If base domain isn't used (if matrix_nginx_proxy_base_domain_serving_enabled: true) then run the 'Configure Website + Access Export' job template again to enable the base domain site.
+
 
 # Starting again:
 

@@ -1,0 +1,20 @@
+
+# Create AWX token for executing modules
+- import_tasks: "{{ role_path }}/tasks/create_token.yml"
+  when: not view_borg_backup | bool
+
+# Re-deploy the server then run a self-check
+- import_tasks: "{{ role_path }}/tasks/deploy_test_server.yml"
+
+# Delete subscription is self-check passes
+- import_tasks: "{{ role_path }}/tasks/delete_subscription.yml"
+
+# Provision the remaining subscription again
+- import_tasks: "{{ role_path }}/tasks/provision_server.yml"
+
+# Configure base domain website if used
+- import_tasks: "{{ role_path }}/tasks/configure_base_website.yml"
+
+# Delete AWX token for executing modules
+- import_tasks: "{{ role_path }}/tasks/delete_token.yml"
+

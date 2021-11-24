@@ -1,0 +1,36 @@
+
+#launch that motherfucker
+
+- name: Launch deploy job template on AWX
+  awx.awx.tower_job_launch:
+    job_template: "{{ matrix_domain }} - 0 - Deploy/Update a Server"
+    tower_host: "https://{{ awx_host }}"
+    tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+    validate_certs: yes
+  register: deploy_job
+
+- name: Wait for job max 900s (15m)
+  awx.awx.tower_job_wait:
+    job_id: "{{ deploy_job.id }}"
+    timeout: 900
+    tower_host: "https://{{ awx_host }}"
+    tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+    validate_certs: yes
+
+# perform a self-check
+
+- name: Launch deploy job template on AWX
+  awx.awx.tower_job_launch:
+    job_template: "{{ matrix_domain }} - 0 - Self-Check"
+    tower_host: "https://{{ awx_host }}"
+    tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+    validate_certs: yes
+  register: check_job
+
+- name: Wait for job max 900s (15m)
+  awx.awx.tower_job_wait:
+    job_id: "{{ check_job.id }}"
+    timeout: 900
+    tower_host: "https://{{ awx_host }}"
+    tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+    validate_certs: yes

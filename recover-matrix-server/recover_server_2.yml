@@ -1,0 +1,10 @@
+---
+- name: "Deploys a newly recovered server after DNS propagation, and removes the old subscription/server if it works."
+  hosts: localhost
+  gather_facts: true
+
+#  vars_files:
+#    - roles/matrix-synapse/vars/workers.yml
+
+  roles:
+    - raise-matrix-server

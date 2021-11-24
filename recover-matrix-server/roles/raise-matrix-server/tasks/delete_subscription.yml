@@ -1,0 +1,18 @@
+
+# delete old subscription
+
+- name: Launch delete job template on AWX
+  awx.awx.tower_job_launch:
+    job_template: "00 - Delete Subscription"
+    tower_host: "https://{{ awx_host }}"
+    tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+    validate_certs: yes
+  register: deploy_job
+
+- name: Wait for job max 900s (15m)
+  awx.awx.tower_job_wait:
+    job_id: "{{ deploy_job.id }}"
+    timeout: 900
+    tower_host: "https://{{ awx_host }}"
+    tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+    validate_certs: yes

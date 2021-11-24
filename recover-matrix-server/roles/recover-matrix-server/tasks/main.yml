@@ -30,3 +30,6 @@
 
 # Delete AWX token for executing modules
 - import_tasks: "{{ role_path }}/tasks/delete_token.yml"
+
+# Print DNS advice
+- import_tasks: "{{ role_path }}/tasks/dns_advice.yml"
