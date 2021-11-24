@@ -1,1 +1,3 @@
 view_borg_backup: false
+borg_backup_matrix_input: ''
+borg_backup_database_input: ''
