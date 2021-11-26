@@ -1,17 +1,56 @@
 
 # delete old subscription
 
-- name: Launch delete job template on AWX
+# load variables
+
+- name: Include hosting variables from hosting_vars.yml
+  include_vars:
+    file: "/tmp/{{ awx_server }}-hosting_vars.yml"
+  no_log: True
+
+# make deletion extra vars from template
+
+# feed it in
+
+- name: Template new 'schedule_delete.json' variable file
+  template:
+    src: './templates/schedule_delete.json.j2'
+    dest: '/tmp/{{ matrix_domain }}_schedule_delete.json'
+
+- name: Include variables from schedule_delete.json
+  include_vars:
+    file: '/tmp/{{ matrix_domain }}_schedule_delete.json'
+  no_log: True
+
+- name: Launch schedule delete job template on AWX
   awx.awx.tower_job_launch:
     job_template: "00 - Delete Subscription"
+    extra_vars: "{{ lookup('file', '/tmp/{{ matrix_domain }}_schedule_delete.json') }}"
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
-  register: deploy_job
+  register: schedule_delete_job
 
 - name: Wait for job max 900s (15m)
   awx.awx.tower_job_wait:
-    job_id: "{{ deploy_job.id }}"
+    job_id: "{{ schedule_delete_job.id }}"
+    timeout: 900
+    tower_host: "https://{{ awx_host }}"
+    tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+    validate_certs: yes
+
+- name: Launch actual delete job template on AWX
+  awx.awx.tower_job_launch:
+    job_template: "0 - {{ subscription_id }} - << SUBSCRIPTION DELETION IN PROGRESS >>"
+    extra_vars: "{{ lookup('file', './extra-vars/delete_subscription.json') }}"
+    tower_host: "https://{{ awx_host }}"
+    tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+    validate_certs: yes
+  register: delete_job
+
+- name: Wait for job max 900s (15m)
+  awx.awx.tower_job_wait:
+    job_id: "{{ delete_job.id }}"
     timeout: 900
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"

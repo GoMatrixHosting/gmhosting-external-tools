@@ -19,7 +19,7 @@ Host 128.199.235.90
 2) Edit the variables in `./inventory/hosts/localhost/vars.yml` for this recovery job.
 
 3) List borg backups for that server:
-`$ ansible-playbook -v -i ./inventory/hosts --extra-vars "view_borg_backup=true" recover_server_1.yml`
+`$ ansible-playbook -v -i ./inventory/hosts --extra-vars "view_borg_backup=true" recover_matrix_server.yml`
 
 4) Observe the output, if you don't want the latest backup to be restored then copy the lines you want to recover:
 
@@ -46,14 +46,14 @@ ok: [localhost] => {
 ```
 
 5A) Run the playbook and recover the latest backup (made after the servers shutdown by this playbook):
-`$ ansible-playbook -v -i ./inventory/hosts recover_server_1.yml`
+`$ ansible-playbook -v -i ./inventory/hosts recover_matrix_server.yml`
 
 5B) Run the playbook and recover a specific backup:
 ```
 $ ansible-playbook -v -i ./inventory/hosts \
 --extra-vars 'borg_backup_matrix_input="T-6HAX1LZIJHX9-aveng-2021-11-20T10:23:46 Sat, 2021-11-20 18:23:51 [01075b0015a7c1aff02e511fdacabc7d4ed73d4cd7e0f7d61788cc405257733b]" \
 borg_backup_database_input="T-6HAX1LZIJHX9-aveng-2021-11-20T10:24:12 Sat, 2021-11-20 18:24:17 [9d2ffcb1c878b60619d6871c72ee04542077a6c31232ccd0e91300705e607bb7]"' \
-recover_server_1.yml
+recover_matrix_server.yml
 ```
 
 6) Alter the DNS record and wait for it to propagate.
