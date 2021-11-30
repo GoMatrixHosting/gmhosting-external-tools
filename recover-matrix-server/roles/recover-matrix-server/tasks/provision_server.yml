@@ -90,7 +90,7 @@
     'server_ipv6': '{{ server_ipv6 }}'
   when: ( server_ipv6 is defined ) and ( server_ipv6 | trim | length > 0 ) and ( subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
 
-- name: Remove imposter-check tag from 'Provision a New Server' job template
+- name: Remove imposter-check tag from new 'Provision a New Server' job template
   awx.awx.tower_job_template:
     name: "0 - {{ new_subscription_id }} - Provision a New Server"
     description: "Creates digitalocean droplet and space, performs initial setup, adds relevant playbooks to users account."
@@ -111,9 +111,9 @@
     validate_certs: yes
   when: ( subscription_type == "digitalocean" ) and ( lock_file_4.stat.exists == false )
 
-- name: Remove imposter-check tag from 'Provision a New Server' job template
+- name: Remove imposter-check tag from new 'Provision a New Server' job template
   awx.awx.tower_job_template:
-    name: "0 - {{ subscription_id }} - Provision a New Server"
+    name: "0 - {{ new_subscription_id }} - Provision a New Server"
     description: "Connects existing server, performs initial setup, adds relevant playbooks to users account."
     extra_vars: "{{ lookup('file', '/tmp/{{ matrix_domain }}_provision_server_extra-vars.json') }}"
     job_type: run

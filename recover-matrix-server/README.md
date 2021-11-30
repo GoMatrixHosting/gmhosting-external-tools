@@ -59,13 +59,12 @@ recover_matrix_server.yml
 6) Alter the DNS record and wait for it to propagate.
 
 
-7) Run the new '0 - Deploy/Update a Server' job template again, then try and login.
+7) Run the playbook and raise and test the new server, then :
+`$ ansible-playbook -v -i ./inventory/hosts raise_matrix_server.yml`
 
-
-8) If the new Matrix server works delete the old subscription with '00 - Ansible Delete Subscription', then re-provision the new subscription using 'Provision a New Server'.
-
-
-9) If base domain isn't used (if matrix_nginx_proxy_base_domain_serving_enabled: true) then run the 'Configure Website + Access Export' job template again to enable the base domain site.
+#7) Run the new '0 - Deploy/Update a Server' job template again, then try and login.
+#8) If the new Matrix server works delete the old subscription with '00 - Ansible Delete Subscription', then re-provision the new subscription using 'Provision a New Server'.
+#9) If base domain isn't used (if matrix_nginx_proxy_base_domain_serving_enabled: true) then run the 'Configure Website + Access Export' job template again to enable the base domain site.
 
 
 # Starting again:
