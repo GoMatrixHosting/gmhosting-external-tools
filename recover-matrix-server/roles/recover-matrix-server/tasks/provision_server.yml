@@ -165,7 +165,7 @@
   when: lock_file_4.stat.exists == false
   register: provision_job_1
 
-- name: Wait for job max 900s (15m)
+- name: Wait for provision job max 900s (15m)
   awx.awx.tower_job_wait:
     job_id: "{{ provision_job_1.id }}"
     timeout: 900

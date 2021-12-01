@@ -31,7 +31,7 @@
     validate_certs: yes
   register: schedule_delete_job
 
-- name: Wait for job max 900s (15m)
+- name: Wait for schedule delete job max 900s (15m)
   awx.awx.tower_job_wait:
     job_id: "{{ schedule_delete_job.id }}"
     timeout: 900
@@ -48,7 +48,7 @@
     validate_certs: yes
   register: delete_job
 
-- name: Wait for job max 900s (15m)
+- name: Wait for actual delete job max 900s (15m)
   awx.awx.tower_job_wait:
     job_id: "{{ delete_job.id }}"
     timeout: 900

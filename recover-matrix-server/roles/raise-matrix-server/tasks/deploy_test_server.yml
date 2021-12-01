@@ -9,7 +9,7 @@
     validate_certs: yes
   register: deploy_job
 
-- name: Wait for job max 900s (15m)
+- name: Wait for deploy job max 900s (15m)
   awx.awx.tower_job_wait:
     job_id: "{{ deploy_job.id }}"
     timeout: 900
@@ -19,7 +19,7 @@
 
 # perform a self-check
 
-- name: Launch deploy job template on AWX
+- name: Launch self-check job template on AWX
   awx.awx.tower_job_launch:
     job_template: "{{ matrix_domain }} - 0 - Self-Check"
     tower_host: "https://{{ awx_host }}"
@@ -27,7 +27,7 @@
     validate_certs: yes
   register: check_job
 
-- name: Wait for job max 900s (15m)
+- name: Wait for self-check job max 900s (15m)
   awx.awx.tower_job_wait:
     job_id: "{{ check_job.id }}"
     timeout: 900

@@ -95,7 +95,7 @@
   when: lock_file_7.stat.exists == false
   register: import_job
 
-- name: Wait for job max 900s (15m)
+- name: Wait for import job max 900s (15m)
   awx.awx.tower_job_wait:
     job_id: "{{ import_job.id }}"
     timeout: 900

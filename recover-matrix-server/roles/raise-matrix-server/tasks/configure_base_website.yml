@@ -24,7 +24,7 @@
   when: matrix_nginx_proxy_base_domain_serving_enabled | bool
   register: configure_website_job
 
-- name: Wait for job max 900s (15m)
+- name: Wait for configure website job max 900s (15m)
   awx.awx.tower_job_wait:
     job_id: "{{ configure_website_job.id }}"
     timeout: 900

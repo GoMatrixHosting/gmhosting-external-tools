@@ -196,7 +196,7 @@
   when: ( not matrix_domain_file.stat.exists ) and ( lock_file_3.stat.exists == false )
   register: create_job
 
-- name: Wait for job max 300s
+- name: Wait for create subscription job max 300s
   awx.awx.tower_job_wait:
     job_id: "{{ create_job.id }}"
     timeout: 300

@@ -63,7 +63,7 @@
     validate_certs: yes
   when: ( subscription_type == "on-premises" ) and ( lock_file_8.stat.exists == false )
 
-- name: Launch provision job template again on AWX to fill surveys
+- name: Launch re-provision job template again on AWX to fill surveys
   awx.awx.tower_job_launch:
     job_template: "0 - {{ new_subscription_id }} - Provision a New Server"
     tower_host: "https://{{ awx_host }}"
@@ -72,7 +72,7 @@
   when: lock_file_8.stat.exists == false
   register: provision_job_2
 
-- name: Wait for job max 900s (15m)
+- name: Wait for re-provision job max 900s (15m)
   awx.awx.tower_job_wait:
     job_id: "{{ provision_job_2.id }}"
     timeout: 900

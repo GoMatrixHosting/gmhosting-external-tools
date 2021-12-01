@@ -30,7 +30,7 @@
     validate_certs: yes
   register: provision_job
 
-- name: Wait for job max 900s (15m)
+- name: Wait for provision job max 900s (15m)
   awx.awx.tower_job_wait:
     job_id: "{{ provision_job.id }}"
     timeout: 900
