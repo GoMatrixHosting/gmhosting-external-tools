@@ -1,4 +1,9 @@
 
+- name: Check if lock_file_9 exists
+  stat: 
+    path: "/tmp/{{ matrix_domain }}_lock_9"
+  register: lock_file_9
+
 #launch that motherfucker
 
 - name: Launch deploy job template on AWX
@@ -7,6 +12,7 @@
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
+  when: lock_file_9.stat.exists == false
   register: deploy_job
 
 - name: Wait for deploy job max 900s (15m)
@@ -16,6 +22,7 @@
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
+  when: lock_file_9.stat.exists == false
 
 # perform a self-check
 
@@ -25,6 +32,7 @@
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
+  when: lock_file_9.stat.exists == false
   register: check_job
 
 - name: Wait for self-check job max 900s (15m)
@@ -34,3 +42,10 @@
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
+  when: lock_file_9.stat.exists == false
+
+- name: Create lock_file_9
+  file:
+    path: /tmp/{{ matrix_domain }}_lock_9
+    state: touch
+  when: lock_file_9.stat.exists == false

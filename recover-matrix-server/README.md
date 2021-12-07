@@ -45,8 +45,33 @@ ok: [localhost] => {
 }
 ```
 
+## NEED TO INCLUDE:
+
+# new_plan_title
+# AND
+# new_do_droplet_region_long
+# OR
+# new_server_ipv4
+# new_server_ipv6
+
+## possible droplet long values
+# New York City (USA)
+# San Francisco (USA)
+# Amsterdam (NLD)
+# Frankfurt (DEU)
+# Singapore (SGP)
+# London (GBR)
+# Toronto (CAN)
+# Balgalore (IND)
+
+
 5A) Run the playbook and recover the latest backup (made after the servers shutdown by this playbook):
-`$ ansible-playbook -v -i ./inventory/hosts recover_matrix_server.yml`
+```
+$ ansible-playbook -v -i ./inventory/hosts \
+--extra-vars 'new_plan_title="Small DigitalOcean Server" \
+new_do_droplet_region_long="New York City (USA)"' \
+recover_matrix_server.yml
+```
 
 5B) Run the playbook and recover a specific backup:
 ```

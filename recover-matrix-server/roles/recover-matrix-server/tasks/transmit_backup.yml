@@ -44,20 +44,21 @@
 
 # controller doesn't know how to each this yet :) [external step]
 
-- name: Update SSH config on backup server
-  blockinfile:
-    path: '/home/{{ ansible_user_id }}/.ssh/config'
-    create: yes
-    block: |
-      Host {{ server_ipv4 }}
-          HostName {{ server_ipv4 }}
-          Port 22
-          User root
-          IdentityFile {{ client_public_ssh_key }}
-  when: lock_file_6.stat.exists == false
+
+#- name: Update SSH config on backup server
+#  blockinfile:
+#    path: '/home/{{ ansible_user_id }}/.ssh/config'
+#    create: yes
+#    block: |
+#      Host {{ server_ip_final }}
+#          HostName {{ server_ip_final }}
+#          Port 22
+#          User root
+#          IdentityFile {{ client_public_ssh_key }}
+#  when: lock_file_6.stat.exists == false
 
 - name: Set the new authorized key taken from '{{ matrix_domain }}_recovery.pub' file
-  delegate_to: "{{ server_ipv4 }}"
+  delegate_to: "{{ server_ip_final }}"
   authorized_key:
     user: root
     state: present
@@ -74,7 +75,7 @@
   when: lock_file_6.stat.exists == false
 
 - name: Install Rsync onto new Matrix server
-  delegate_to: "{{ server_ipv4 }}"
+  delegate_to: "{{ server_ip_final }}"
   apt:
     name: rsync
   when: lock_file_6.stat.exists == false
@@ -86,7 +87,7 @@
     create: yes
     block: |
       Host matrix.{{ matrix_domain }}
-          HostName {{ server_ipv4 }}
+          HostName {{ server_ip_final }}
           Port 22
           User root
           IdentityFile /tmp/{{ matrix_domain }}_recovery

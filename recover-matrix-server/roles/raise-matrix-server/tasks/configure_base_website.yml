@@ -1,5 +1,9 @@
 
-
+- name: Check if lock_file_12 exists
+  stat: 
+    path: "/tmp/{{ matrix_domain }}_lock_12"
+  register: lock_file_12
+  
 #9) If base domain isn't used (if matrix_nginx_proxy_base_domain_serving_enabled: true) then run the 'Configure Website + Access Export' job template again to enable the base domain site.
 
 # aveng.xyz - 1 - Configure Website + Access Export
@@ -13,15 +17,16 @@
     src: "/var/lib/awx/projects/clients/{{ member_id }}/{{ new_subscription_id }}/extra_vars.json"
     dest: "/tmp/{{ matrix_domain }}-new_extra_vars.json"
     flat: yes
+  when: lock_file_12.stat.exists == false
 
 - name: Launch configure website job template on AWX
   awx.awx.tower_job_launch:
     job_template: "{{ matrix_domain }} - 1 - Configure Website + Access Export"
-    extra_vars: "{{ lookup('file', '/tmp/{{ matrix_domain }}-new_extra_vars.json') }}"
+    extra_vars: "{{ lookup('file', '/tmp/{{ matrix_domain }}_new_extra_vars.json') }}"
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
-  when: matrix_nginx_proxy_base_domain_serving_enabled | bool
+  when: ( matrix_nginx_proxy_base_domain_serving_enabled | bool ) and ( lock_file_12.stat.exists == false )
   register: configure_website_job
 
 - name: Wait for configure website job max 900s (15m)
@@ -31,4 +36,10 @@
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
-  when: matrix_nginx_proxy_base_domain_serving_enabled | bool
+  when: ( matrix_nginx_proxy_base_domain_serving_enabled | bool ) and ( lock_file_12.stat.exists == false )
+
+- name: Create lock_file_12
+  file:
+    path: /tmp/{{ matrix_domain }}_lock_12
+    state: touch
+  when: lock_file_12.stat.exists == false

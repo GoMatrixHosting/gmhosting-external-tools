@@ -1,4 +1,9 @@
 
+- name: Check if lock_file_10 exists
+  stat: 
+    path: "/tmp/{{ matrix_domain }}_lock_10"
+  register: lock_file_10
+
 # delete old subscription
 
 # load variables
@@ -12,14 +17,28 @@
 
 # feed it in
 
+- name: Include organisation variables from organisation.yml
+  include_vars:
+    file: "/tmp/{{ matrix_domain }}_organisation.yml"
+
+- name: Include extra vars from original subscription
+  include_vars:
+    file: "/tmp/{{ matrix_domain }}_extra_vars.json"
+
+#- name: Include 'new_subscription_id' variables from '{{ matrix_domain }}.yml'
+#  include_vars:
+#    file: './inventory/{{ matrix_domain }}.yml'
+
 - name: Template new 'schedule_delete.json' variable file
   template:
     src: './templates/schedule_delete.json.j2'
     dest: '/tmp/{{ matrix_domain }}_schedule_delete.json'
+  when: lock_file_10.stat.exists == false
 
 - name: Include variables from schedule_delete.json
   include_vars:
     file: '/tmp/{{ matrix_domain }}_schedule_delete.json'
+  when: lock_file_10.stat.exists == false
   no_log: True
 
 - name: Launch schedule delete job template on AWX
@@ -29,6 +48,7 @@
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
+  when: lock_file_10.stat.exists == false
   register: schedule_delete_job
 
 - name: Wait for schedule delete job max 900s (15m)
@@ -38,6 +58,7 @@
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
+  when: lock_file_10.stat.exists == false
 
 - name: Launch actual delete job template on AWX
   awx.awx.tower_job_launch:
@@ -46,6 +67,7 @@
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
+  when: lock_file_10.stat.exists == false
   register: delete_job
 
 - name: Wait for actual delete job max 900s (15m)
@@ -55,3 +77,10 @@
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
+  when: lock_file_10.stat.exists == false
+
+- name: Create lock_file_10
+  file:
+    path: /tmp/{{ matrix_domain }}_lock_10
+    state: touch
+  when: lock_file_10.stat.exists == false

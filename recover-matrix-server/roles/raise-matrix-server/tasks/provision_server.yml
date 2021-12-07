@@ -1,26 +1,28 @@
 
-
+- name: Check if lock_file_11 exists
+  stat: 
+    path: "/tmp/{{ matrix_domain }}_lock_11"
+  register: lock_file_11
 
 - name: Include 'new_subscription_id' variables from '{{ matrix_domain }}.yml'
   include_vars:
     file: './inventory/{{ matrix_domain }}.yml'
-  when: matrix_domain_file.stat.exists
-
+  when: lock_file_11.stat.exists == false
 
 #16) Remove the 'imposter-check' tag again and run 'Provision a New Server' again to load up the surveys from matrix_vars.yml
 
+#- name: Save new 'Provision Server' survey.json to the AWX tower, template
+#  template:
+#    src: './surveys/provision_survey_digitalocean.json.j2'
+#    dest: '/tmp/{{ matrix_domain }}_provision_survey_digitalocean.json'
+#  when: ( new_subscription_type == "digitalocean" ) and ( lock_file_11.stat.exists == false )
 
-- name: Save new 'Provision Server' survey.json to the AWX tower, template
-  template:
-    src: './surveys/provision_survey_digitalocean.json.j2'
-    dest: '/tmp/{{ matrix_domain }}_provision_survey_digitalocean.json'
-  when: subscription_type == "digitalocean"
+#- name: Save new 'Provision Server' survey.json to the AWX tower, template
+#  template:
+#    src: './surveys/provision_survey_on-premises.json.j2'
+#    dest: '/tmp/{{ matrix_domain }}_provision_survey_on-premises.json'
+#  when: ( new_subscription_type == "on_premises" ) and ( lock_file_11.stat.exists == false )
 
-- name: Save new 'Provision Server' survey.json to the AWX tower, template
-  template:
-    src: './surveys/provision_survey_on-premises.json.j2'
-    dest: '/tmp/{{ matrix_domain }}_provision_survey_on-premises.json'
-  when: subscription_type == "on_premises"
 
 - name: Launch provision job template again on AWX to regenerate the deleted templates
   awx.awx.tower_job_launch:
@@ -28,6 +30,7 @@
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
+  when: lock_file_11.stat.exists == false
   register: provision_job
 
 - name: Wait for provision job max 900s (15m)
@@ -37,4 +40,10 @@
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
-
+  when: lock_file_11.stat.exists == false
+    
+- name: Create lock_file_11
+  file:
+    path: /tmp/{{ matrix_domain }}_lock_11
+    state: touch
+  when: lock_file_11.stat.exists == false

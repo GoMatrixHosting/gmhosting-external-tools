@@ -1,7 +1,6 @@
 
 # Create AWX token for executing modules
 - import_tasks: "{{ role_path }}/tasks/create_token.yml"
-  when: not view_borg_backup | bool
 
 # Re-deploy the server then run a self-check
 - import_tasks: "{{ role_path }}/tasks/deploy_test_server.yml"

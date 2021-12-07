@@ -1,0 +1,111 @@
+
+#4) Download extracted export to controller:
+
+#organisation.yml
+#matrix_awx.yml
+#server_vars.yml
+#extra_vars.json
+
+- name: Fetch 'organisation.yml' from extracted backup
+  delegate_to: "{{ backup_server }}"
+  fetch:
+    src: "{{ backup_directory }}/extracted/{{ matrix_domain }}/matrix/awx/organisation.yml"
+    dest: "/tmp/{{ matrix_domain }}_organisation.yml"
+    flat: yes
+
+- name: Include organisation.yml variable file
+  include_vars: "/tmp/{{ matrix_domain }}_organisation.yml"
+
+- name: Fetch 'matrix_vars.yml' from extracted backup
+  delegate_to: "{{ backup_server }}"
+  fetch:
+    src: "{{ backup_directory }}/extracted/{{ matrix_domain }}/matrix/awx/matrix_vars.yml"
+    dest: "/tmp/{{ matrix_domain }}_matrix_vars.yml"
+    flat: yes
+
+- name: Include matrix_vars.yml variable file
+  include_vars: "/tmp/{{ matrix_domain }}_matrix_vars.yml"
+
+- name: Fetch 'server_vars.yml' from extracted backup
+  delegate_to: "{{ backup_server }}"
+  fetch:
+    src: "{{ backup_directory }}/extracted/{{ matrix_domain }}/matrix/awx/server_vars.yml"
+    dest: "/tmp/{{ matrix_domain }}_server_vars.yml"
+    flat: yes
+
+- name: Include server_vars.yml variable file
+  include_vars: "/tmp/{{ matrix_domain }}_server_vars.yml"
+
+- name: Fetch 'extra_vars.json' from extracted backup
+  delegate_to: "{{ backup_server }}"
+  fetch:
+    src: "{{ backup_directory }}/extracted/{{ matrix_domain }}/matrix/awx/extra_vars.json"
+    dest: "/tmp/{{ matrix_domain }}_extra_vars.json"
+    flat: yes
+
+- name: Include extra_vars.json variable file
+  include_vars: "/tmp/{{ matrix_domain }}_extra_vars.json"
+
+# create variable file for new subscription:
+
+- name: Check if matrix_domain_file exists for this subscription
+  stat:
+    path: '/tmp/{{ matrix_domain }}.yml'
+  register: matrix_domain_file
+
+- name: Template '{{ matrix_domain }}.yml' variable file for newly recovered server
+  template:
+    src: './templates/matrix_domain.yml.j2'
+    dest: '/tmp/{{ matrix_domain }}.yml'
+  when: not matrix_domain_file.stat.exists
+
+- name: Generate random string for subscription_id
+  shell: tr -dc A-Z0-9 </dev/urandom | head -c 12
+  when: not matrix_domain_file.stat.exists
+  register: random_string
+
+- name: Set subscription_id
+  set_fact:
+    new_subscription_id: "R-{{ random_string.stdout }}"
+  when: not matrix_domain_file.stat.exists
+
+- name: 
+  set_fact:
+    new_subscription_type: "digitalocean"
+  when: new_plan_title is search("^DigitalOcean")
+
+- set_fact:
+    new_subscription_type: "on-premises"
+  when: new_plan_title is search("^On-Premises")
+
+- name: Add new_do_droplet_region_long to '{{ matrix_domain }}.yml' if defined
+  lineinfile:
+    path: '/tmp/{{ matrix_domain }}.yml'
+    create: yes
+    regexp: '^new_do_droplet_region_long: .*'
+    line: 'new_do_droplet_region_long: {{ new_do_droplet_region_long }}'
+    mode: '0600'
+  when: ( new_do_droplet_region_long is defined ) and ( new_do_droplet_region_long | length > 0 )
+
+- name: Add new_server_ipv4 to '{{ matrix_domain }}.yml' if defined
+  lineinfile:
+    path: '/tmp/{{ matrix_domain }}.yml'
+    create: yes
+    regexp: '^new_server_ipv4: .*'
+    line: 'new_server_ipv4: {{ new_server_ipv4 }}'
+    mode: '0600'
+  when: ( new_server_ipv4 is defined ) and ( new_server_ipv4 | length > 0 )
+
+- name: Add new_server_ipv6 to '{{ matrix_domain }}.yml' if defined
+  lineinfile:
+    path: '/tmp/{{ matrix_domain }}.yml'
+    create: yes
+    regexp: '^new_server_ipv6: .*'
+    line: 'new_server_ipv6: {{ new_server_ipv6 }}'
+    mode: '0600'
+  when: ( new_server_ipv6 is defined ) and ( new_server_ipv6 | length > 0 )
+
+- name: Include new_subscription_id, new_plan_title and other variables from '{{ matrix_domain }}.yml' if it exists 
+  include_vars:
+    file: "./inventory/{{ matrix_domain }}.yml"
+  when: matrix_domain_file.stat.exists
