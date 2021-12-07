@@ -150,8 +150,3 @@ $ rm /tmp/gomatrixhostingisawesome.xyz*
 ```
 
 
-# Issues:
-
-- regenerated digitalocean servers use the same server name!! [fixed]
-- how should on-premises servers be recovered?
-
