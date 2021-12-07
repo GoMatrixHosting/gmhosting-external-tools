@@ -4,7 +4,7 @@
 Used to recover a Matrix server connected to AWX. This tool should be run outside of AWX.
 
 
-# Instructions:
+## Instructions:
 
 1) On the controller create a SSH config entry for the old servers IP:
 ```
@@ -45,51 +45,85 @@ ok: [localhost] => {
 }
 ```
 
-## NEED TO INCLUDE:
-
-# new_plan_title
-# AND
-# new_do_droplet_region_long
-# OR
-# new_server_ipv4
-# new_server_ipv6
-
-## possible droplet long values
-# New York City (USA)
-# San Francisco (USA)
-# Amsterdam (NLD)
-# Frankfurt (DEU)
-# Singapore (SGP)
-# London (GBR)
-# Toronto (CAN)
-# Balgalore (IND)
-
 
 5A) Run the playbook and recover the latest backup (made after the servers shutdown by this playbook):
+
+Need to include:
+```
+new_account_type: 'memberpress' or 'manual'
+new_plan_title: <see below>
+AND
+new_do_droplet_region_long <see below>
+OR
+new_server_ipv4
+new_server_ipv6
+```
+Possible new_plan_title titles:
+```
+Micro DigitalOcean Server
+Small DigitalOcean Server
+Medium DigitalOcean Server
+Large DigitalOcean Server
+Jumbo 500 DigitalOcean Server
+Jumbo 1000 DigitalOcean Server
+Jumbo 2000 DigitalOcean Server
+Jumbo 5000 DigitalOcean Server
+Micro On-Premises Server
+Small On-Premises Server
+Medium On-Premises Server
+Large On-Premises Server
+Jumbo 500 On-Premises Server
+Jumbo 1000 On-Premises Server
+Jumbo 2000 On-Premises Server
+Jumbo 5000 On-Premises Server
+```
+Possible new_do_droplet_region_long values:
+```
+New York City (USA)
+San Francisco (USA)
+Amsterdam (NLD)
+Frankfurt (DEU)
+Singapore (SGP)
+London (GBR)
+Toronto (CAN)
+Balgalore (IND)
+```
+
+Examples:
 ```
 $ ansible-playbook -v -i ./inventory/hosts \
---extra-vars 'new_plan_title="Small DigitalOcean Server" \
+--extra-vars 'new_account_type="memberpress" \
+new_plan_title="Small DigitalOcean Server" \
 new_do_droplet_region_long="New York City (USA)"' \
 recover_matrix_server.yml
 ```
 
+```
+$ ansible-playbook -v -i ./inventory/hosts \
+--extra-vars 'new_account_type="manual" \
+new_plan_title="Large On-Premises Server" \
+new_server_ipv4="157.230.245.53" \
+recover_matrix_server.yml
+```
+
+
 5B) Run the playbook and recover a specific backup:
 ```
 $ ansible-playbook -v -i ./inventory/hosts \
---extra-vars 'borg_backup_matrix_input="T-6HAX1LZIJHX9-aveng-2021-11-20T10:23:46 Sat, 2021-11-20 18:23:51 [01075b0015a7c1aff02e511fdacabc7d4ed73d4cd7e0f7d61788cc405257733b]" \
+--extra-vars 'new_account_type="memberpress" \
+new_plan_title="Small DigitalOcean Server" \
+new_do_droplet_region_long="New York City (USA)"' \
+borg_backup_matrix_input="T-6HAX1LZIJHX9-aveng-2021-11-20T10:23:46 Sat, 2021-11-20 18:23:51 [01075b0015a7c1aff02e511fdacabc7d4ed73d4cd7e0f7d61788cc405257733b]" \
 borg_backup_database_input="T-6HAX1LZIJHX9-aveng-2021-11-20T10:24:12 Sat, 2021-11-20 18:24:17 [9d2ffcb1c878b60619d6871c72ee04542077a6c31232ccd0e91300705e607bb7]"' \
 recover_matrix_server.yml
 ```
+
 
 6) Alter the DNS record and wait for it to propagate.
 
 
 7) Run the playbook and raise and test the new server, then :
 `$ ansible-playbook -v -i ./inventory/hosts raise_matrix_server.yml`
-
-#7) Run the new '0 - Deploy/Update a Server' job template again, then try and login.
-#8) If the new Matrix server works delete the old subscription with '00 - Ansible Delete Subscription', then re-provision the new subscription using 'Provision a New Server'.
-#9) If base domain isn't used (if matrix_nginx_proxy_base_domain_serving_enabled: true) then run the 'Configure Website + Access Export' job template again to enable the base domain site.
 
 
 # Starting again:
