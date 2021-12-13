@@ -12,7 +12,7 @@
 - name: Copy 'matrix_vars.yml' from extracted backup to new subscription folder on AWX
   delegate_to: "{{ awx_server }}"
   copy:
-    src: "/tmp/{{ matrix_domain }}-matrix_vars.yml"
+    src: "/tmp/{{ matrix_domain }}_matrix_vars.yml"
     dest: "/var/lib/awx/projects/clients/{{ member_id }}/{{ new_subscription_id }}/matrix_vars.yml"
     owner: root
     group: root

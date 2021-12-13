@@ -53,12 +53,6 @@
     path: '/tmp/{{ matrix_domain }}.yml'
   register: matrix_domain_file
 
-- name: Template '{{ matrix_domain }}.yml' variable file for newly recovered server
-  template:
-    src: './templates/matrix_domain.yml.j2'
-    dest: '/tmp/{{ matrix_domain }}.yml'
-  when: not matrix_domain_file.stat.exists
-
 - name: Generate random string for subscription_id
   shell: tr -dc A-Z0-9 </dev/urandom | head -c 12
   when: not matrix_domain_file.stat.exists
@@ -69,14 +63,20 @@
     new_subscription_id: "R-{{ random_string.stdout }}"
   when: not matrix_domain_file.stat.exists
 
+- name: Template '{{ matrix_domain }}.yml' variable file for newly recovered server
+  template:
+    src: './templates/matrix_domain.yml.j2'
+    dest: '/tmp/{{ matrix_domain }}.yml'
+  when: not matrix_domain_file.stat.exists
+
 - name: 
   set_fact:
     new_subscription_type: "digitalocean"
-  when: new_plan_title is search("^DigitalOcean")
+  when: new_plan_title is search("DigitalOcean")
 
 - set_fact:
     new_subscription_type: "on-premises"
-  when: new_plan_title is search("^On-Premises")
+  when: new_plan_title is search("On-Premises")
 
 - name: Add new_do_droplet_region_long to '{{ matrix_domain }}.yml' if defined
   lineinfile:

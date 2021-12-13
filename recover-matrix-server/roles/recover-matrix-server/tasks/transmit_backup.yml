@@ -45,17 +45,17 @@
 # controller doesn't know how to each this yet :) [external step]
 
 
-#- name: Update SSH config on backup server
-#  blockinfile:
-#    path: '/home/{{ ansible_user_id }}/.ssh/config'
-#    create: yes
-#    block: |
-#      Host {{ server_ip_final }}
-#          HostName {{ server_ip_final }}
-#          Port 22
-#          User root
-#          IdentityFile {{ client_public_ssh_key }}
-#  when: lock_file_6.stat.exists == false
+- name: Update SSH config on controller to access new server
+  blockinfile:
+    path: '/home/{{ ansible_user_id }}/.ssh/config'
+    create: yes
+    block: |
+      Host {{ server_ip_final }}
+          HostName {{ server_ip_final }}
+          Port 22
+          User root
+          IdentityFile {{ client_public_ssh_key }}
+  when: lock_file_6.stat.exists == false
 
 - name: Set the new authorized key taken from '{{ matrix_domain }}_recovery.pub' file
   delegate_to: "{{ server_ip_final }}"

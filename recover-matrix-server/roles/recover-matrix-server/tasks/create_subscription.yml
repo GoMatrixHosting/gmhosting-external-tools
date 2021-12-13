@@ -86,12 +86,9 @@
 - name:
   set_fact:
     create_subscription_template: '00 - Create MP Subscription'
-  when: ( new_account_type == "manual" ) and ( lock_file_3.stat.exists == false )
+  when: ( lock_file_3.stat.exists == false )
 
-- name:
-  set_fact:
-    create_subscription_template: '00 - Create Manual Subscription'
-  when: ( new_account_type == "memberpress" ) and ( lock_file_3.stat.exists == false )
+#^ MANUAL IS ONLY FOR ACCOUNTS THAT DONT EXIST :)
 
 
 # 2) it's stored in the inventory file ./inventory/{{ matrix_domain }}.yml for the next run
@@ -99,15 +96,9 @@
 
 - name: Template new '{{ matrix_domain }}_create_subscription_template.json' extra variables
   template:
-    src: './templates/manual_create_subscription_template.json.j2'
-    dest: '/tmp/{{ matrix_domain }}_create_subscription_template.json'
-  when: ( new_account_type == "manual" ) and ( lock_file_3.stat.exists == false )
-
-- name: Template new '{{ matrix_domain }}_create_subscription_template.json' extra variables
-  template:
     src: './templates/mp_create_subscription_template.json.j2'
     dest: '/tmp/{{ matrix_domain }}_create_subscription_template.json'
-  when: ( new_account_type == "memberpress" ) and ( lock_file_3.stat.exists == false )
+  when: ( lock_file_3.stat.exists == false )
 
 - name: Launch subscription creation job template on AWX
   awx.awx.tower_job_launch:
