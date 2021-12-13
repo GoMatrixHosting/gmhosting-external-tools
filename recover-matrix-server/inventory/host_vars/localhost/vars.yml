@@ -1,7 +1,7 @@
 
 # Matrix Server Variables
-matrix_domain: sneezin.xyz
-#matrix_domain: aveng.xyz
+#matrix_domain: sneezin.xyz
+matrix_domain: urgin.xyz
 
 # AWX Variables
 awx_server: panel.topgunmatrix.com

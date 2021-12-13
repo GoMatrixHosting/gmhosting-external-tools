@@ -50,7 +50,6 @@ ok: [localhost] => {
 
 Need to include:
 ```
-new_account_type: 'memberpress' or 'manual'
 new_plan_title: <see below>
 AND
 new_do_droplet_region_long <see below>
@@ -92,16 +91,14 @@ Balgalore (IND)
 Examples:
 ```
 $ ansible-playbook -v -i ./inventory/hosts \
---extra-vars 'new_account_type="memberpress" \
-new_plan_title="Small DigitalOcean Server" \
+--extra-vars 'new_plan_title="Micro DigitalOcean Server" \
 new_do_droplet_region_long="New York City (USA)"' \
 recover_matrix_server.yml
 ```
 
 ```
 $ ansible-playbook -v -i ./inventory/hosts \
---extra-vars 'new_account_type="manual" \
-new_plan_title="Large On-Premises Server" \
+--extra-vars 'new_plan_title="Micro On-Premises Server" \
 new_server_ipv4="157.230.245.53" \
 recover_matrix_server.yml
 ```
@@ -110,8 +107,7 @@ recover_matrix_server.yml
 5B) Run the playbook and recover a specific backup:
 ```
 $ ansible-playbook -v -i ./inventory/hosts \
---extra-vars 'new_account_type="memberpress" \
-new_plan_title="Small DigitalOcean Server" \
+--extra-vars 'new_plan_title="Small DigitalOcean Server" \
 new_do_droplet_region_long="New York City (USA)"' \
 borg_backup_matrix_input="T-6HAX1LZIJHX9-aveng-2021-11-20T10:23:46 Sat, 2021-11-20 18:23:51 [01075b0015a7c1aff02e511fdacabc7d4ed73d4cd7e0f7d61788cc405257733b]" \
 borg_backup_database_input="T-6HAX1LZIJHX9-aveng-2021-11-20T10:24:12 Sat, 2021-11-20 18:24:17 [9d2ffcb1c878b60619d6871c72ee04542077a6c31232ccd0e91300705e607bb7]"' \
