@@ -1,4 +1,14 @@
 
+- name: Fetch 'server_vars.yml' from new server
+  delegate_to: "{{ server_ip_final }}"
+  fetch:
+    src: "/matrix/awx/server_vars.yml"
+    dest: "/tmp/{{ matrix_domain }}_new_server_vars.yml"
+    flat: yes
+
+- name: Include new server_vars.yml variable file
+  include_vars: "/tmp/{{ matrix_domain }}_new_server_vars.yml"
+
 - name:
   delegate_to: 127.0.0.1
   command: |
