@@ -140,9 +140,3 @@ $ ls /tmp/gomatrixhostingisawesome.xyz*
 /tmp/gomatrixhostingisawesome.xyz_lock_2           /tmp/gomatrixhostingisawesome.xyz-server_vars.yml
 $ rm /tmp/gomatrixhostingisawesome.xyz*
 ```
-3) delete the domains inventory file:
-```
-/recover-matrix-server$ rm ./inventory/gomatrixhostingisawesome.xyz.yml
-```
-
-

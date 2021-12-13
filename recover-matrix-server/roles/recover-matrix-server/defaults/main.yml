@@ -1,8 +1,8 @@
 view_borg_backup: false
 borg_backup_matrix_input: ''
 borg_backup_database_input: ''
-#server_ipv4: ''
-#server_ipv6: ''
+server_ipv4: ''
+server_ipv6: ''
 new_server_ipv4: ''
 new_server_ipv6: ''
 new_do_server_ipv4: ''

@@ -40,7 +40,7 @@
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
-  when: ( subscription_type == "digitalocean" ) and ( lock_file_8.stat.exists == false )
+  when: ( new_subscription_type == "digitalocean" ) and ( lock_file_8.stat.exists == false )
 
 - name: Remove imposter-check tag from 'Provision a New Server' job template
   awx.awx.tower_job_template:
@@ -52,8 +52,8 @@
     project: "{{ member_id }} - Ansible Provision Server"
     playbook: setup.yml
     credential: "{{ member_id }} - AWX SSH Key"
-    survey_enabled: true
-    survey_spec: "{{ lookup('file', '/tmp/{{ matrix_domain }}_provision_survey_on-premises.json') }}"
+    survey_enabled: false
+    #survey_spec: "{{ lookup('file', '/tmp/{{ matrix_domain }}_provision_survey_on-premises.json') }}"
     state: present
     verbosity: 1
     job_tags: setup-firewall, setup-mailgun, setup-export, setup-backup
@@ -61,7 +61,7 @@
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
-  when: ( subscription_type == "on-premises" ) and ( lock_file_8.stat.exists == false )
+  when: ( new_subscription_type == "on-premises" ) and ( lock_file_8.stat.exists == false )
 
 - name: Launch re-provision job template again on AWX to fill surveys
   awx.awx.tower_job_launch:
@@ -80,28 +80,6 @@
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
   when: lock_file_8.stat.exists == false
-
-
-#17) Copy the DNS information and send it to the customer so they can configure DNS again. For Example:
-
-#        "Your server has been created! You now need to configure your DNS to have the",
-#        "following records:",
-#        "Type    Host                    Priority  Weight  Port   Target",
-#        "A       -                       -         -       -      178.62.95.215",
-#        "A       -                       -         -       -      2a03:b0c0:1:d0::6df:e001",
-#        "A       matrix                  -         -       -      178.62.95.215",
-#        "A       matrix                  -         -       -      2a03:b0c0:1:d0::6df:e001",
-#        "CNAME   element                 -         -       -      matrix.fishbole.xyz",
-#        "CNAME   jitsi                   -         -       -      matrix.fishbole.xyz",
-#        "SRV     _matrix-identity._tcp   10        0       443    matrix.fishbole.xyz",
-#        "-",
-#        "Setting the IPv6 record is optional. If you need help doing this please contact us."
-
-# copy output from provision job?
-
-# point user to provision job?
-
-# re-generate the advice?
 
 
 - name: Create lock_file_8
