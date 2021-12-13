@@ -97,9 +97,9 @@ recover_matrix_server.yml
 ```
 
 ```
-$ ansible-playbook -v -i ./inventory/hosts \
+ansible-playbook -v -i ./inventory/hosts \
 --extra-vars 'new_plan_title="Micro On-Premises Server" \
-new_server_ipv4="157.230.245.53" \
+new_server_ipv4="188.166.223.116"' \
 recover_matrix_server.yml
 ```
 

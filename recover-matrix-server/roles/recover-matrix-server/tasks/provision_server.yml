@@ -49,7 +49,7 @@
 
 - name: Include 'new_subscription_id' variables from '{{ matrix_domain }}.yml'
   include_vars:
-    file: './inventory/{{ matrix_domain }}.yml'
+    file: '/tmp/{{ matrix_domain }}.yml'
   when: matrix_domain_file.stat.exists
 
 - name: Template new 'provision_server_extra-vars.json' variable file
@@ -130,7 +130,7 @@
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
-  when: ( new_subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
+  when: ( new_subscription_type == "on-premises" ) and ( lock_file_4.stat.exists == false )
 
 - name: Disallow team from executing the new 'Provision a New Server' job_template
   awx.awx.tower_role:

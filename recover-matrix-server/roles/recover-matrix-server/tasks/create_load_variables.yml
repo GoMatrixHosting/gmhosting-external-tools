@@ -107,5 +107,5 @@
 
 - name: Include new_subscription_id, new_plan_title and other variables from '{{ matrix_domain }}.yml' if it exists 
   include_vars:
-    file: "./inventory/{{ matrix_domain }}.yml"
+    file: "/tmp/{{ matrix_domain }}.yml"
   when: matrix_domain_file.stat.exists
