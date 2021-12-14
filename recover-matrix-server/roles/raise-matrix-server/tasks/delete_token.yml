@@ -7,3 +7,6 @@
     existing_token_id: "{{ awx_session_token.ansible_facts.tower_token.id }}"
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+
+- debug:
+    msg: Your server has now been recovered! Thank you for choosing GoMatrixHosting! :)

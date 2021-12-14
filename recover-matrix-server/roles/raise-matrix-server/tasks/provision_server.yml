@@ -6,7 +6,7 @@
 
 - name: Include 'new_subscription_id' variables from '{{ matrix_domain }}.yml'
   include_vars:
-    file: './inventory/{{ matrix_domain }}.yml'
+    file: '/tmp/{{ matrix_domain }}.yml'
   when: lock_file_11.stat.exists == false
 
 #16) Remove the 'imposter-check' tag again and run 'Provision a New Server' again to load up the surveys from matrix_vars.yml
