@@ -50,12 +50,16 @@ ok: [localhost] => {
 
 Need to include:
 ```
-new_plan_title: <see below>
+new_plan_title <see below>
 AND
 new_do_droplet_region_long <see below>
 OR
 new_server_ipv4
 new_server_ipv6
+```
+Optionally you can change the member_id by specifying it:
+```
+member_id
 ```
 Possible new_plan_title titles:
 ```
@@ -88,7 +92,7 @@ Toronto (CAN)
 Balgalore (IND)
 ```
 
-Examples:
+Example, recover to DO:
 ```
 $ ansible-playbook -v -i ./inventory/hosts \
 --extra-vars 'new_plan_title="Micro DigitalOcean Server" \
@@ -96,9 +100,11 @@ new_do_droplet_region_long="New York City (USA)"' \
 recover_matrix_server.yml
 ```
 
+Example, recover to OP and change member_id:
 ```
 ansible-playbook -v -i ./inventory/hosts \
---extra-vars 'new_plan_title="Micro On-Premises Server" \
+--extra-vars 'member_id: "65" \
+new_plan_title="Micro On-Premises Server" \
 new_server_ipv4="188.166.223.116"' \
 recover_matrix_server.yml
 ```
