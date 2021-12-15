@@ -131,7 +131,7 @@
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
-  when: ( new_subscription_type == "on-premises" ) and ( lock_file_4.stat.exists == false )
+  when: ( new_subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
 
 - name: Disallow team from executing the new 'Provision a New Server' job_template
   awx.awx.tower_role:
@@ -214,19 +214,19 @@
   delegate_to: 127.0.0.1
   set_fact:
     server_ip_final: '{{ new_server_ipv4 }}'
-  when: ( new_server_ipv4 | length > 0 ) and ( new_server_ipv6 | length > 0 ) and ( new_subscription_type == "on-premises" )
+  when: ( new_server_ipv4 | length > 0 ) and ( new_server_ipv6 | length > 0 ) and ( new_subscription_type == "on_premises" )
 
 - name: Set server_ip_final if only IPv4 is defined. [on-premises]
   delegate_to: 127.0.0.1
   set_fact:
     server_ip_final: '{{ new_server_ipv4 }}'
-  when: ( new_server_ipv4 | length > 0 ) and ( new_server_ipv6 | length == 0 ) and ( new_subscription_type == "on-premises" )
+  when: ( new_server_ipv4 | length > 0 ) and ( new_server_ipv6 | length == 0 ) and ( new_subscription_type == "on_premises" )
 
 - name: Set server_ip_final if only IPv6 is defined. [on-premises]
   delegate_to: 127.0.0.1
   set_fact:
     server_ip_final: '{{ new_server_ipv6 }}'
-  when: ( new_server_ipv4 | length == 0 ) and ( new_server_ipv6 | length > 0 ) and ( new_subscription_type == "on-premises" )
+  when: ( new_server_ipv4 | length == 0 ) and ( new_server_ipv6 | length > 0 ) and ( new_subscription_type == "on_premises" )
 
 - name: Add server_ip_final to '{{ matrix_domain }}.yml'
   lineinfile:

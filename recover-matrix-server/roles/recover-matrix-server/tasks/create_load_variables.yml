@@ -75,7 +75,7 @@
   when: new_plan_title is search("DigitalOcean")
 
 - set_fact:
-    new_subscription_type: "on-premises"
+    new_subscription_type: "on_premises"
   when: new_plan_title is search("On-Premises")
 
 - name: Add new_do_droplet_region_long to '{{ matrix_domain }}.yml' if defined

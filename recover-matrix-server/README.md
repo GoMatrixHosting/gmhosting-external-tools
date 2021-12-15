@@ -83,7 +83,7 @@ Toronto (CAN)
 Balgalore (IND)
 ```
 
-Example, recover to DO:
+Example, recover to DO with the same member_id:
 ```
 $ ansible-playbook -v -i ./inventory/hosts \
 --extra-vars 'matrix_domain="aveng.xyz" \

@@ -8,8 +8,8 @@
 # Delete subscription is self-check passes
 - import_tasks: "{{ role_path }}/tasks/delete_subscription.yml"
 
-# Provision the remaining subscription again
-- import_tasks: "{{ role_path }}/tasks/provision_server.yml"
+# Provision the remaining subscription again (is this even needed?)
+#- import_tasks: "{{ role_path }}/tasks/provision_server.yml"
 
 # Configure base domain website if used
 - import_tasks: "{{ role_path }}/tasks/configure_base_website.yml"

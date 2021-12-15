@@ -7,7 +7,7 @@
 
 #16) Remove the 'imposter-check' tag again and run 'Provision a New Server' again to load up the surveys from matrix_vars.yml
 
-- name: Remove imposter-check tag from 'Provision a New Server' job template
+- name: Remove imposter-check tag and other tags from 'Provision a New Server' job template
   awx.awx.tower_job_template:
     name: "0 - {{ new_subscription_id }} - Provision a New Server"
     description: "Creates digitalocean droplet and space, performs initial setup, adds relevant playbooks to users account."
@@ -20,14 +20,14 @@
     survey_enabled: false
     state: present
     verbosity: 1
-    job_tags: setup-firewall, setup-mailgun, setup-export, setup-backup
+    #job_tags: setup-firewall, setup-mailgun, setup-export, setup-backup
     skip_tags: digitalocean-space
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
   when: ( new_subscription_type == "digitalocean" ) and ( lock_file_8.stat.exists == false )
 
-- name: Remove imposter-check tag from 'Provision a New Server' job template
+- name: Remove imposter-check tag and other tags from 'Provision a New Server' job template
   awx.awx.tower_job_template:
     name: "0 - {{ new_subscription_id }} - Provision a New Server"
     description: "Creates digitalocean droplet and space, performs initial setup, adds relevant playbooks to users account."
@@ -40,12 +40,12 @@
     survey_enabled: false
     state: present
     verbosity: 1
-    job_tags: setup-firewall, setup-mailgun, setup-export, setup-backup
+    #job_tags: setup-firewall, setup-mailgun, setup-export, setup-backup
     skip_tags: digitalocean-space
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
-  when: ( new_subscription_type == "on-premises" ) and ( lock_file_8.stat.exists == false )
+  when: ( new_subscription_type == "on_premises" ) and ( lock_file_8.stat.exists == false )
 
 - name: Launch re-provision job template again on AWX to fill surveys
   awx.awx.tower_job_launch:
