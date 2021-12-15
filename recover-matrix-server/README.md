@@ -117,11 +117,11 @@ recover_matrix_server.yml
 5) Alter the DNS record and wait for it to propagate.
 
 
-6A) Run the playbook and raise and test the new server, then :
-`$ ansible-playbook -v -i ./inventory/hosts raise_matrix_server.yml`
+6A) Run the playbook and raise and test the new server, then finally delete the old server and subscription:
+`$ ansible-playbook -v -i ./inventory/hosts --extra-vars 'matrix_domain="aveng.xyz"' raise_matrix_server.yml`
 
 6B) If you're expecting the self-check to fail add this extra variable to skip it (dangerous):
-`$ ansible-playbook -v -i ./inventory/hosts --extra-vars 'skip_self_check="true"' raise_matrix_server.yml`
+`$ ansible-playbook -v -i ./inventory/hosts --extra-vars 'matrix_domain="aveng.xyz" skip_self_check="true"' raise_matrix_server.yml`
 
 
 # Starting again:
