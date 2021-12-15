@@ -6,22 +6,12 @@ Used to recover a Matrix server connected to AWX. This tool should be run outsid
 
 ## Instructions:
 
-1) On the controller create a SSH config entry for the old servers IP:
-```
-Host 128.199.235.90
-    HostName 128.199.235.90
-    User root
-    Port 22
-    IdentityFile ~/.ssh/matrixtesting6_ed25519
-    IdentitiesOnly=yes
-```
+1) Edit the variables in `./inventory/hosts/localhost/vars.yml` for this recovery job.
 
-2) Edit the variables in `./inventory/hosts/localhost/vars.yml` for this recovery job.
-
-3) List borg backups for that server:
+2) List borg backups for that server:
 `$ ansible-playbook -v -i ./inventory/hosts --extra-vars "view_borg_backup=true" recover_matrix_server.yml`
 
-4) Observe the output, if you don't want the latest backup to be restored then copy the lines you want to recover:
+3) Observe the output, if you don't want the latest backup to be restored then copy the lines you want to recover:
 
 ```
 TASK [recover-matrix-server : Print borg backup history for /matrix] ***********************************************************************************************************
@@ -46,7 +36,7 @@ ok: [localhost] => {
 ```
 
 
-5A) Run the playbook and recover the latest backup (made after the servers shutdown by this playbook):
+4A) Run the playbook and recover the latest backup (made after the servers shutdown by this playbook):
 
 Need to include:
 ```
@@ -103,14 +93,13 @@ recover_matrix_server.yml
 Example, recover to OP and change member_id:
 ```
 ansible-playbook -v -i ./inventory/hosts \
---extra-vars 'member_id: "65" \
+--extra-vars 'member_id="65" \
 new_plan_title="Micro On-Premises Server" \
 new_server_ipv4="188.166.223.116"' \
 recover_matrix_server.yml
 ```
 
-
-5B) Run the playbook and recover a specific backup:
+4B) Run the playbook and recover a specific backup:
 ```
 $ ansible-playbook -v -i ./inventory/hosts \
 --extra-vars 'new_plan_title="Small DigitalOcean Server" \
@@ -121,13 +110,13 @@ recover_matrix_server.yml
 ```
 
 
-6) Alter the DNS record and wait for it to propagate.
+5) Alter the DNS record and wait for it to propagate.
 
 
-7A) Run the playbook and raise and test the new server, then :
+6A) Run the playbook and raise and test the new server, then :
 `$ ansible-playbook -v -i ./inventory/hosts raise_matrix_server.yml`
 
-7B) If you're expecting the self-check to fail add this extra variable to skip it (dangerous):
+6B) If you're expecting the self-check to fail add this extra variable to skip it (dangerous):
 `$ ansible-playbook -v -i ./inventory/hosts --extra-vars 'skip_self_check="true"' raise_matrix_server.yml`
 
 

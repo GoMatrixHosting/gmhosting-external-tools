@@ -27,9 +27,14 @@
   register: subscription_backup_directory
   when: lock_file_4.stat.exists == false
 
+- name: Collect current datetime
+  set_fact:
+    awx_datetime: "{{ lookup('pipe', 'date +%Y-%m-%d_%H:%M') }}"
+  when: lock_file_4.stat.exists == false
+
 - name: Move the subscriptions backup directory if unmoved
   delegate_to: "{{ backup_server }}"
-  command: mv "{{ backup_directory }}/Clients/{{ matrix_domain }}" "{{ backup_directory }}/Clients/{{ matrix_domain }}-old"
+  command: mv "{{ backup_directory }}/Clients/{{ matrix_domain }}" "{{ backup_directory }}/Clients/{{ matrix_domain }}_{{ awx_datetime }}"
   when: ( subscription_backup_directory.stat.exists is defined ) and ( subscription_backup_directory.stat.exists ) and ( lock_file_4.stat.exists == false )
 
 
