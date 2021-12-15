@@ -61,13 +61,13 @@
   template:
     src: './templates/digitalocean_provision_server_extra-vars.json.j2'
     dest: '/tmp/{{ matrix_domain }}_provision_server_extra-vars.json'
-  when: ( subscription_type == "digitalocean" ) and ( lock_file_4.stat.exists == false )
+  when: ( new_subscription_type == "digitalocean" ) and ( lock_file_4.stat.exists == false )
 
 - name: Template new 'provision_server_extra-vars.json' variable file
   template:
     src: './templates/on_premises_provision_server_extra-vars.json.j2'
     dest: '/tmp/{{ matrix_domain }}_provision_server_extra-vars.json'
-  when: ( subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
+  when: ( new_subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
 
 
 
@@ -81,7 +81,7 @@
     state: present
   with_dict:
     'server_ipv4': '{{ new_server_ipv4 }}'
-  when: ( new_server_ipv4 is defined ) and ( new_server_ipv4 | trim | length > 0 ) and ( subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
+  when: ( new_server_ipv4 is defined ) and ( new_server_ipv4 | trim | length > 0 ) and ( new_subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
 
 - name: Add server_ipv6 line to provision_server_extra-vars.json
   delegate_to: 127.0.0.1
@@ -93,7 +93,7 @@
     state: present
   with_dict:
     'server_ipv6': '{{ new_server_ipv6 }}'
-  when: ( new_server_ipv6 is defined ) and ( new_server_ipv6 | trim | length > 0 ) and ( subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
+  when: ( new_server_ipv6 is defined ) and ( new_server_ipv6 | trim | length > 0 ) and ( new_subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
 
 - name: Remove imposter-check tag from new 'Provision a New Server' job template
   awx.awx.tower_job_template:

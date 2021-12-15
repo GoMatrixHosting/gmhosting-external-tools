@@ -9,7 +9,7 @@ Used to recover a Matrix server connected to AWX. This tool should be run outsid
 1) Edit the variables in `./inventory/hosts/localhost/vars.yml` for this recovery job.
 
 2) List borg backups for that server:
-`$ ansible-playbook -v -i ./inventory/hosts --extra-vars "view_borg_backup=true" recover_matrix_server.yml`
+`$ ansible-playbook -v -i ./inventory/hosts --extra-vars 'matrix_domain="aveng.xyz" view_borg_backup="true"' recover_matrix_server.yml`
 
 3) Observe the output, if you don't want the latest backup to be restored then copy the lines you want to recover:
 
