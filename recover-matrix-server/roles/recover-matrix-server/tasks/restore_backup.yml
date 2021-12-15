@@ -40,8 +40,6 @@
   when: ( lock_file_2.stat.exists == false ) or ( view_borg_backup | bool )
   register: borg_matrix_history
 
-
-
 # should let user pick which borg backup
 
 - name: Collect borg backup /database history for that subscription
@@ -61,8 +59,6 @@
     msg: "{{ borg_database_history.stdout_lines }}"
   when: ( lock_file_2.stat.exists == false ) or ( view_borg_backup | bool )
 
-
-
 - name: Set boolean value to exit playbook
   set_fact:
     awx_end_playbook: true
@@ -71,12 +67,6 @@
 - name: End playbook if this task list is called.
   meta: end_play
   when: ( awx_end_playbook is defined ) and ( awx_end_playbook | bool ) and ( view_borg_backup | bool )
-
-
-#- name: Print borg backup history for /database
-#  debug:
-#    msg: "{{ borg_database_history.stdout_lines | last }}"
-#  when: ( lock_file_2.stat.exists == false ) or ( view_borg_backup | bool )
 
 - name:
   set_fact:

@@ -5,21 +5,7 @@
     path: "/tmp/{{ matrix_domain }}_lock_8"
   register: lock_file_8
 
-
 #16) Remove the 'imposter-check' tag again and run 'Provision a New Server' again to load up the surveys from matrix_vars.yml
-
-
-#- name: Save new 'Provision Server' survey.json to the AWX tower, template
-#  template:
-#    src: './surveys/provision_survey_digitalocean.json.j2'
-#    dest: '/tmp/{{ matrix_domain }}_provision_survey_digitalocean.json'
-#  when: ( subscription_type == "digitalocean" ) and ( lock_file_8.stat.exists == false )
-
-#- name: Save new 'Provision Server' survey.json to the AWX tower, template
-#  template:
-#    src: './surveys/provision_survey_on-premises.json.j2'
-#    dest: '/tmp/{{ matrix_domain }}_provision_survey_on-premises.json'
-#  when: ( subscription_type == "on_premises" ) and ( lock_file_8.stat.exists == false )
 
 - name: Remove imposter-check tag from 'Provision a New Server' job template
   awx.awx.tower_job_template:
@@ -32,7 +18,6 @@
     playbook: setup.yml
     credential: "{{ member_id }} - AWX SSH Key"
     survey_enabled: false
-    #survey_spec: "{{ lookup('file', '/tmp/{{ matrix_domain }}_provision_survey_digitalocean.json') }}"
     state: present
     verbosity: 1
     job_tags: setup-firewall, setup-mailgun, setup-export, setup-backup
@@ -53,7 +38,6 @@
     playbook: setup.yml
     credential: "{{ member_id }} - AWX SSH Key"
     survey_enabled: false
-    #survey_spec: "{{ lookup('file', '/tmp/{{ matrix_domain }}_provision_survey_on-premises.json') }}"
     state: present
     verbosity: 1
     job_tags: setup-firewall, setup-mailgun, setup-export, setup-backup
@@ -80,7 +64,6 @@
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
   when: lock_file_8.stat.exists == false
-
 
 - name: Create lock_file_8
   file:

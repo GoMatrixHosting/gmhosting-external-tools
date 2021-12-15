@@ -69,8 +69,6 @@
     dest: '/tmp/{{ matrix_domain }}_provision_server_extra-vars.json'
   when: ( new_subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
 
-
-
 - name: Add server_ipv4 line to provision_server_extra-vars.json
   delegate_to: 127.0.0.1
   lineinfile:
@@ -106,7 +104,6 @@
     playbook: setup.yml
     credential: "{{ member_id }} - AWX SSH Key"
     survey_enabled: false
-    #survey_spec: "{{ lookup('file', '/tmp/{{ matrix_domain }}_provision_survey_digitalocean.json') }}"
     state: present
     verbosity: 1
     job_tags: setup-firewall, setup-mailgun, setup-export, setup-backup
@@ -127,7 +124,6 @@
     playbook: setup.yml
     credential: "{{ member_id }} - AWX SSH Key"
     survey_enabled: false
-    #survey_spec: "{{ lookup('file', '/tmp/{{ matrix_domain }}_provision_survey_on-premises.json') }}"
     state: present
     verbosity: 1
     job_tags: setup-firewall, setup-mailgun, setup-export, setup-backup

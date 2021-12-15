@@ -22,7 +22,6 @@
 
 #root@fishbole.xyz:~# tar -xvzf /chroot/export/matrix_2021-06-12.tar.gz -C /
 
-
 # generate SSH key on backup server
 
 - name: Generate an OpenSSH keypair with a different algorithm (dsa)
@@ -43,7 +42,6 @@
   when: lock_file_6.stat.exists == false
 
 # controller doesn't know how to each this yet :) [external step]
-
 
 - name: Update SSH config on controller to access new server
   blockinfile:

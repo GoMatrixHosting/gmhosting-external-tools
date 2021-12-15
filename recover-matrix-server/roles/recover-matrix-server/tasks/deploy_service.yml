@@ -60,14 +60,6 @@
 
 #modify it
 
-#{
-#  "matrix_domain": "gomatrixhostingforever.xyz",
-#  "target": "matrix.gomatrixhostingforever.xyz",
-#  "matrix_awx_enabled": "true",
-#  "plan_title": "Micro On-Premises Server",
-#  "subscription_id": "T-W3XYUTLK1RWE",
-#  "member_id": "billy.bob"
-#}
 - name: Update 'new_extra_vars.json' file to include SSL disabler
   lineinfile:
     path: '/tmp/{{ matrix_domain }}_new_extra_vars.json'
@@ -78,7 +70,6 @@
   when: lock_file_5.stat.exists == false
 
 #load it in with
-
 
 - name: Re-create 'Deploy/Update a Server' job template
   awx.awx.tower_job_template:

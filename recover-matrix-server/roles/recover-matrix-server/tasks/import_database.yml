@@ -56,7 +56,6 @@
   when: lock_file_7.stat.exists == false
   register: server_path_postgres_dump
 
-
 # template it
 
 - name: Save new 'Provision Server' survey.json to the AWX tower, template
