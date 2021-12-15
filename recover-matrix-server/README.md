@@ -40,6 +40,7 @@ ok: [localhost] => {
 
 Need to include:
 ```
+matrix_domain
 new_plan_title <see below>
 AND
 new_do_droplet_region_long <see below>
@@ -85,7 +86,8 @@ Balgalore (IND)
 Example, recover to DO:
 ```
 $ ansible-playbook -v -i ./inventory/hosts \
---extra-vars 'new_plan_title="Micro DigitalOcean Server" \
+--extra-vars 'matrix_domain="aveng.xyz" \
+new_plan_title="Micro DigitalOcean Server" \
 new_do_droplet_region_long="New York City (USA)"' \
 recover_matrix_server.yml
 ```
@@ -93,7 +95,8 @@ recover_matrix_server.yml
 Example, recover to OP and change member_id:
 ```
 ansible-playbook -v -i ./inventory/hosts \
---extra-vars 'member_id="65" \
+--extra-vars 'matrix_domain="aveng.xyz" \
+member_id="65" \
 new_plan_title="Micro On-Premises Server" \
 new_server_ipv4="188.166.223.116"' \
 recover_matrix_server.yml
@@ -102,7 +105,8 @@ recover_matrix_server.yml
 4B) Run the playbook and recover a specific backup:
 ```
 $ ansible-playbook -v -i ./inventory/hosts \
---extra-vars 'new_plan_title="Small DigitalOcean Server" \
+--extra-vars 'matrix_domain="aveng.xyz" \
+new_plan_title="Small DigitalOcean Server" \
 new_do_droplet_region_long="New York City (USA)"' \
 borg_backup_matrix_input="T-6HAX1LZIJHX9-aveng-2021-11-20T10:23:46 Sat, 2021-11-20 18:23:51 [01075b0015a7c1aff02e511fdacabc7d4ed73d4cd7e0f7d61788cc405257733b]" \
 borg_backup_database_input="T-6HAX1LZIJHX9-aveng-2021-11-20T10:24:12 Sat, 2021-11-20 18:24:17 [9d2ffcb1c878b60619d6871c72ee04542077a6c31232ccd0e91300705e607bb7]"' \
