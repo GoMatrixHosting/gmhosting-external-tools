@@ -11,16 +11,6 @@
 - name: Include matrix_vars.yml variable file
   include_vars: "/tmp/{{ matrix_domain }}_matrix_vars.yml"
 
-#- name: Collect the extra_vars.json of the new subscription. 
-#  delegate_to: "{{ awx_server }}"
-#  fetch:
-#    src: "/var/lib/awx/projects/clients/{{ member_id }}/{{ new_subscription_id }}/extra_vars.json"
-#    dest: "/tmp/{{ matrix_domain }}-new_extra_vars.json"
-#    flat: yes
-#  when: lock_file_12.stat.exists == false
-
-#^ already done
-
 - name: Launch configure website job template on AWX
   awx.awx.tower_job_launch:
     job_template: "{{ matrix_domain }} - 1 - Configure Website + Access Export"

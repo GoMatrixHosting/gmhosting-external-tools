@@ -25,10 +25,6 @@
   include_vars:
     file: "/tmp/{{ matrix_domain }}_extra_vars.json"
 
-#- name: Include 'new_subscription_id' variables from '{{ matrix_domain }}.yml'
-#  include_vars:
-#    file: './inventory/{{ matrix_domain }}.yml'
-
 - name: Template new 'schedule_delete.json' variable file
   template:
     src: './templates/schedule_delete.json.j2'

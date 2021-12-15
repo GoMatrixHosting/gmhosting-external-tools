@@ -1,10 +1,7 @@
 ---
-- name: "Recovers a Matrix server to AWX."
+- name: "Recovers a Matrix server to a new subscription in AWX."
   hosts: localhost
-  gather_facts: true
-
-#  vars_files:
-#    - roles/matrix-synapse/vars/workers.yml
+  gather_facts: false
 
   roles:
     - recover-matrix-server

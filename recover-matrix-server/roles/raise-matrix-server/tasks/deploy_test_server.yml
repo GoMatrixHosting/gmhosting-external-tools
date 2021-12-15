@@ -4,14 +4,6 @@
     path: "/tmp/{{ matrix_domain }}_lock_9"
   register: lock_file_9
 
-#delete previous /etc/hosts record in AWX (buggy!)
-
-#- name: Clean up known_hosts record in AWX for the homeserver address
-#  delegate_to: "{{ awx_server }}"
-#  command: |
-#    docker exec -it awx_task bash -lc sed -i '/{{ matrix_domain }}/d' /etc/hosts
-#  when: lock_file_9.stat.exists == false
-
 #launch that motherfucker
 
 - name: Launch deploy job template on AWX
