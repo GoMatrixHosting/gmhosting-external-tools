@@ -20,8 +20,8 @@
     survey_enabled: false
     state: present
     verbosity: 1
-    #job_tags: setup-firewall, setup-mailgun, setup-export, setup-backup
-    skip_tags: digitalocean-space
+    job_tags: ''
+    skip_tags: digitalocean-space, imposter-check, setup-firewall, setup-mailgun, setup-export, setup-backup
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
@@ -40,8 +40,8 @@
     survey_enabled: false
     state: present
     verbosity: 1
-    #job_tags: setup-firewall, setup-mailgun, setup-export, setup-backup
-    skip_tags: digitalocean-space
+    job_tags: ''
+    skip_tags: digitalocean-space, imposter-check, setup-firewall, setup-mailgun, setup-export, setup-backup
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
