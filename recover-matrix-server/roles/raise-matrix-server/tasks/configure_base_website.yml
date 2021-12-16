@@ -1,0 +1,39 @@
+
+- name: Check if lock_file_11 exists
+  stat: 
+    path: "/tmp/{{ matrix_domain }}_lock_11"
+  register: lock_file_11
+  
+#9) If base domain isn't used (if matrix_nginx_proxy_base_domain_serving_enabled: true) then run the 'Configure Website + Access Export' job template again to enable the base domain site.
+
+# aveng.xyz - 1 - Configure Website + Access Export
+
+- name: Include matrix_vars.yml variable file
+  include_vars: "/tmp/{{ matrix_domain }}_matrix_vars.yml"
+
+- name: Launch configure website job template on AWX
+  awx.awx.tower_job_launch:
+    job_template: "{{ matrix_domain }} - 1 - Configure Website + Access Export"
+    #extra_vars: "{{ lookup('file', '/tmp/{{ matrix_domain }}_new_extra_vars.json') }}"
+    tower_host: "https://{{ awx_host }}"
+    tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+    validate_certs: yes
+  when: ( matrix_nginx_proxy_base_domain_serving_enabled | bool ) and ( lock_file_11.stat.exists == false )
+  register: configure_website_job
+  ignore_errors: True
+
+- name: Wait for configure website job max 900s (15m)
+  awx.awx.tower_job_wait:
+    job_id: "{{ configure_website_job.id }}"
+    timeout: 900
+    tower_host: "https://{{ awx_host }}"
+    tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+    validate_certs: yes
+  when: ( matrix_nginx_proxy_base_domain_serving_enabled | bool ) and ( lock_file_11.stat.exists == false )
+  ignore_errors: True
+
+- name: Create lock_file_11
+  file:
+    path: /tmp/{{ matrix_domain }}_lock_11
+    state: touch
+  when: lock_file_11.stat.exists == false

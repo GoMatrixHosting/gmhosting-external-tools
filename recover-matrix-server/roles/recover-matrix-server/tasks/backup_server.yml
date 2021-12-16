@@ -13,7 +13,7 @@
   when: lock_file_1.stat.exists == false
   register: stop_job
 
-- name: Wait for job max 3 minutes
+- name: Wait for stop job max 3 minutes
   awx.awx.tower_job_wait:
     job_id: "{{ stop_job.id }}"
     timeout: 180
@@ -28,17 +28,17 @@
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
-  when: lock_file_1.stat.exists == false
+  when: ( lock_file_1.stat.exists == false ) and ( borg_backup_matrix_input | trim | length > 0 ) and ( borg_backup_database_input | trim | length > 0 )
   register: backup_job
 
-- name: Wait for job max 2 hours
+- name: Wait for backup job max 2 hours
   awx.awx.tower_job_wait:
     job_id: "{{ backup_job.id }}"
     timeout: 7200
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
-  when: lock_file_1.stat.exists == false
+  when: ( lock_file_1.stat.exists == false ) and ( borg_backup_matrix_input | trim | length > 0 ) and ( borg_backup_database_input | trim | length > 0 )
 
 - name: Create lock_file_1
   file:

@@ -10,6 +10,9 @@
 # Restore the latest backup to the backup servers extraction directory
 - import_tasks: "{{ role_path }}/tasks/restore_backup.yml"
 
+# Create and load variable files for the new subscription
+- import_tasks: "{{ role_path }}/tasks/create_load_variables.yml"
+
 # Create a new subscription for the recovered server
 - import_tasks: "{{ role_path }}/tasks/create_subscription.yml"
 

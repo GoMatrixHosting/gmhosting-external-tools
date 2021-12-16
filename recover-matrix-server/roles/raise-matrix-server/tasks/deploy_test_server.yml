@@ -1,5 +1,42 @@
 
+- name: Check if lock_file_9 exists
+  stat: 
+    path: "/tmp/{{ matrix_domain }}_lock_9"
+  register: lock_file_9
+
 #launch that motherfucker
+
+# should launch with only the 'setup-nginx-proxy' and 'start' tags, speeeeeed booooooooost!
+
+- name: Remove SSL disabling line from new extra vars file
+  lineinfile:
+    path: /tmp/{{ matrix_domain }}_new_extra_vars.json
+    create: no
+    state: absent
+    line: '  "matrix_ssl_retrieval_method": "none",'
+    mode: '0600'
+  when: lock_file_9.stat.exists == false
+
+- name: Include new extra_vars variable file
+  include_vars: "/tmp/{{ matrix_domain }}_new_extra_vars.json"
+
+- name: Update 'Deploy/Update a Server' job template
+  awx.awx.tower_job_template:
+    name: "{{ matrix_domain }} - 0 - Deploy/Update a Server"
+    description: "Creates a new matrix service with Spantaleev's playbooks"
+    extra_vars: "{{ lookup('file', '/tmp/{{ matrix_domain }}_new_extra_vars.json') }}"
+    job_type: run
+    job_tags: "setup-nginx-proxy,setup-coturn,start"
+    inventory: "{{ member_id }}"
+    project: "{{ member_id }} - Matrix Docker Ansible Deploy"
+    playbook: setup.yml
+    credential: "{{ member_id }} - AWX SSH Key"
+    state: present
+    verbosity: 1
+    tower_host: "https://{{ awx_host }}"
+    tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+    validate_certs: yes
+  when: lock_file_9.stat.exists == false
 
 - name: Launch deploy job template on AWX
   awx.awx.tower_job_launch:
@@ -7,30 +44,58 @@
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
+  when: lock_file_9.stat.exists == false
   register: deploy_job
 
-- name: Wait for job max 900s (15m)
+- name: Wait for deploy job max 900s (15m)
   awx.awx.tower_job_wait:
     job_id: "{{ deploy_job.id }}"
     timeout: 900
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
+  when: lock_file_9.stat.exists == false
 
 # perform a self-check
 
-- name: Launch deploy job template on AWX
+- name: Launch self-check job template on AWX
   awx.awx.tower_job_launch:
     job_template: "{{ matrix_domain }} - 0 - Self-Check"
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
+  when: ( lock_file_9.stat.exists == false ) and ( skip_self_check == false )
   register: check_job
 
-- name: Wait for job max 900s (15m)
+- name: Wait for self-check job max 900s (15m)
   awx.awx.tower_job_wait:
     job_id: "{{ check_job.id }}"
     timeout: 900
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
+  when: ( lock_file_9.stat.exists == false ) and ( skip_self_check == false )
+
+- name: Reset 'Deploy/Update a Server' job template
+  awx.awx.tower_job_template:
+    name: "{{ matrix_domain }} - 0 - Deploy/Update a Server"
+    description: "Creates a new matrix service with Spantaleev's playbooks"
+    extra_vars: "{{ lookup('file', '/tmp/{{ matrix_domain }}_new_extra_vars.json') }}"
+    job_type: run
+    job_tags: "setup-all,start"
+    inventory: "{{ member_id }}"
+    project: "{{ member_id }} - Matrix Docker Ansible Deploy"
+    playbook: setup.yml
+    credential: "{{ member_id }} - AWX SSH Key"
+    state: present
+    verbosity: 1
+    tower_host: "https://{{ awx_host }}"
+    tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
+    validate_certs: yes
+  when: lock_file_9.stat.exists == false
+
+- name: Create lock_file_9
+  file:
+    path: /tmp/{{ matrix_domain }}_lock_9
+    state: touch
+  when: lock_file_9.stat.exists == false

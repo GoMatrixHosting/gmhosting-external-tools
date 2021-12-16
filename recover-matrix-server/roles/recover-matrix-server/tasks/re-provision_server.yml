@@ -5,23 +5,9 @@
     path: "/tmp/{{ matrix_domain }}_lock_8"
   register: lock_file_8
 
-
 #16) Remove the 'imposter-check' tag again and run 'Provision a New Server' again to load up the surveys from matrix_vars.yml
 
-
-- name: Save new 'Provision Server' survey.json to the AWX tower, template
-  template:
-    src: './surveys/provision_survey_digitalocean.json.j2'
-    dest: '/tmp/{{ matrix_domain }}_provision_survey_digitalocean.json'
-  when: ( subscription_type == "digitalocean" ) and ( lock_file_8.stat.exists == false )
-
-- name: Save new 'Provision Server' survey.json to the AWX tower, template
-  template:
-    src: './surveys/provision_survey_on-premises.json.j2'
-    dest: '/tmp/{{ matrix_domain }}_provision_survey_on-premises.json'
-  when: ( subscription_type == "on_premises" ) and ( lock_file_8.stat.exists == false )
-
-- name: Remove imposter-check tag from 'Provision a New Server' job template
+- name: Remove imposter-check tag and other tags from 'Provision a New Server' job template
   awx.awx.tower_job_template:
     name: "0 - {{ new_subscription_id }} - Provision a New Server"
     description: "Creates digitalocean droplet and space, performs initial setup, adds relevant playbooks to users account."
@@ -31,18 +17,17 @@
     project: "{{ member_id }} - Ansible Provision Server"
     playbook: setup.yml
     credential: "{{ member_id }} - AWX SSH Key"
-    survey_enabled: true
-    survey_spec: "{{ lookup('file', '/tmp/{{ matrix_domain }}_provision_survey_digitalocean.json') }}"
+    survey_enabled: false
     state: present
     verbosity: 1
-    job_tags: setup-firewall, setup-mailgun, setup-export, setup-backup
-    skip_tags: digitalocean-space
+    job_tags: ''
+    skip_tags: digitalocean-space, imposter-check, setup-firewall, setup-mailgun, setup-export, setup-backup
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
-  when: ( subscription_type == "digitalocean" ) and ( lock_file_8.stat.exists == false )
+  when: ( new_subscription_type == "digitalocean" ) and ( lock_file_8.stat.exists == false )
 
-- name: Remove imposter-check tag from 'Provision a New Server' job template
+- name: Remove imposter-check tag and other tags from 'Provision a New Server' job template
   awx.awx.tower_job_template:
     name: "0 - {{ new_subscription_id }} - Provision a New Server"
     description: "Creates digitalocean droplet and space, performs initial setup, adds relevant playbooks to users account."
@@ -52,18 +37,17 @@
     project: "{{ member_id }} - Ansible Provision Server"
     playbook: setup.yml
     credential: "{{ member_id }} - AWX SSH Key"
-    survey_enabled: true
-    survey_spec: "{{ lookup('file', '/tmp/{{ matrix_domain }}_provision_survey_on-premises.json') }}"
+    survey_enabled: false
     state: present
     verbosity: 1
-    job_tags: setup-firewall, setup-mailgun, setup-export, setup-backup
-    skip_tags: digitalocean-space
+    job_tags: ''
+    skip_tags: digitalocean-space, imposter-check, setup-firewall, setup-mailgun, setup-export, setup-backup
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
-  when: ( subscription_type == "on-premises" ) and ( lock_file_8.stat.exists == false )
+  when: ( new_subscription_type == "on_premises" ) and ( lock_file_8.stat.exists == false )
 
-- name: Launch provision job template again on AWX to fill surveys
+- name: Launch re-provision job template again on AWX to fill surveys
   awx.awx.tower_job_launch:
     job_template: "0 - {{ new_subscription_id }} - Provision a New Server"
     tower_host: "https://{{ awx_host }}"
@@ -72,7 +56,7 @@
   when: lock_file_8.stat.exists == false
   register: provision_job_2
 
-- name: Wait for job max 900s (15m)
+- name: Wait for re-provision job max 900s (15m)
   awx.awx.tower_job_wait:
     job_id: "{{ provision_job_2.id }}"
     timeout: 900
@@ -80,29 +64,6 @@
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
   when: lock_file_8.stat.exists == false
-
-
-#17) Copy the DNS information and send it to the customer so they can configure DNS again. For Example:
-
-#        "Your server has been created! You now need to configure your DNS to have the",
-#        "following records:",
-#        "Type    Host                    Priority  Weight  Port   Target",
-#        "A       -                       -         -       -      178.62.95.215",
-#        "A       -                       -         -       -      2a03:b0c0:1:d0::6df:e001",
-#        "A       matrix                  -         -       -      178.62.95.215",
-#        "A       matrix                  -         -       -      2a03:b0c0:1:d0::6df:e001",
-#        "CNAME   element                 -         -       -      matrix.fishbole.xyz",
-#        "CNAME   jitsi                   -         -       -      matrix.fishbole.xyz",
-#        "SRV     _matrix-identity._tcp   10        0       443    matrix.fishbole.xyz",
-#        "-",
-#        "Setting the IPv6 record is optional. If you need help doing this please contact us."
-
-# copy output from provision job?
-
-# point user to provision job?
-
-# re-generate the advice?
-
 
 - name: Create lock_file_8
   file:

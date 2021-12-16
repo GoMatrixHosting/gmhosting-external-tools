@@ -22,7 +22,6 @@
 
 #root@fishbole.xyz:~# tar -xvzf /chroot/export/matrix_2021-06-12.tar.gz -C /
 
-
 # generate SSH key on backup server
 
 - name: Generate an OpenSSH keypair with a different algorithm (dsa)
@@ -44,20 +43,20 @@
 
 # controller doesn't know how to each this yet :) [external step]
 
-- name: Update SSH config on backup server
+- name: Update SSH config on controller to access new server
   blockinfile:
     path: '/home/{{ ansible_user_id }}/.ssh/config'
     create: yes
     block: |
-      Host {{ server_ipv4 }}
-          HostName {{ server_ipv4 }}
+      Host {{ server_ip_final }}
+          HostName {{ server_ip_final }}
           Port 22
           User root
           IdentityFile {{ client_public_ssh_key }}
   when: lock_file_6.stat.exists == false
 
 - name: Set the new authorized key taken from '{{ matrix_domain }}_recovery.pub' file
-  delegate_to: "{{ server_ipv4 }}"
+  delegate_to: "{{ server_ip_final }}"
   authorized_key:
     user: root
     state: present
@@ -74,7 +73,7 @@
   when: lock_file_6.stat.exists == false
 
 - name: Install Rsync onto new Matrix server
-  delegate_to: "{{ server_ipv4 }}"
+  delegate_to: "{{ server_ip_final }}"
   apt:
     name: rsync
   when: lock_file_6.stat.exists == false
@@ -86,7 +85,7 @@
     create: yes
     block: |
       Host matrix.{{ matrix_domain }}
-          HostName {{ server_ipv4 }}
+          HostName {{ server_ip_final }}
           Port 22
           User root
           IdentityFile /tmp/{{ matrix_domain }}_recovery
@@ -102,6 +101,15 @@
   delegate_to: "{{ backup_server }}"
   command: |
     rsync -e "ssh -o StrictHostKeyChecking=no" -av {{ backup_extraction_directory }}/{{ matrix_domain }}/chroot/ matrix.{{ matrix_domain }}:/chroot/
+  when: lock_file_6.stat.exists == false
+
+- name: Unset the new authorized key taken from '{{ matrix_domain }}_recovery.pub' file
+  delegate_to: "{{ server_ip_final }}"
+  authorized_key:
+    user: root
+    state: absent
+    exclusive: no
+    key: "{{ lookup('file', '/tmp/{{ matrix_domain }}_recovery.pub') }}"
   when: lock_file_6.stat.exists == false
 
 - name: Create lock_file_6

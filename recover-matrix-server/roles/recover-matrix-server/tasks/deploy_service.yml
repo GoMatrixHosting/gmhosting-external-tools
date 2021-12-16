@@ -12,7 +12,7 @@
 - name: Copy 'matrix_vars.yml' from extracted backup to new subscription folder on AWX
   delegate_to: "{{ awx_server }}"
   copy:
-    src: "/tmp/{{ matrix_domain }}-matrix_vars.yml"
+    src: "/tmp/{{ matrix_domain }}_matrix_vars.yml"
     dest: "/var/lib/awx/projects/clients/{{ member_id }}/{{ new_subscription_id }}/matrix_vars.yml"
     owner: root
     group: root
@@ -38,26 +38,11 @@
 #root@AWX-panel:~# docker exec -i -t awx_task bash
 #bash-4.4# echo -e '# Custom DNS records for matrix.fishbole.xyz\n165.22.255.141 fishbole.xyz\n165.22.255.141 matrix.fishbole.xyz\n165.22.255.141 element.fishbole.xyz\n165.22.255.141 jitsi.fishbole.xyz' >> /etc/hosts
 
-
-- name: Note the IP address generated during provision. 
-  delegate_to: "{{ awx_server }}"
-  fetch:
-    src: "/var/lib/awx/projects/clients/{{ member_id }}/{{ new_subscription_id }}/server_vars.yml"
-    dest: "/tmp/{{ matrix_domain }}-new_server_vars.yml"
-    flat: yes
-  when: lock_file_5.stat.exists == false
-
-- name: Include new_server_vars.yml variable file
-  include_vars: "/tmp/{{ matrix_domain }}-new_server_vars.yml"
-  when: lock_file_5.stat.exists == false
-
-- name: Add new known_hosts record for the homeserver address.
+- name: Add new known_hosts record in AWX for the homeserver address
   delegate_to: "{{ awx_server }}"
   command: |
-    docker exec -i -t awx_task bash echo -e '# Custom DNS records for matrix.{{ matrix_domain }}\n{{ server_ipv4 }} {{ matrix_domain }}\n{{ server_ipv4 }} matrix.{{ matrix_domain }}\n{{ server_ipv4 }} element.{{ matrix_domain }}\n{{ server_ipv4 }} jitsi.{{ matrix_domain }}' >> /etc/hosts
+    docker exec -i -t awx_task bash echo -e '# Custom DNS records for matrix.{{ matrix_domain }}\n{{ server_ip_final }} {{ matrix_domain }}\n{{ server_ip_final }} matrix.{{ matrix_domain }}\n{{ server_ip_final }} {{ awx_element_subdomain }}.{{ matrix_domain }}\n{{ server_ip_final }} jitsi.{{ matrix_domain }}' >> /etc/hosts
   when: lock_file_5.stat.exists == false
-
-
 
 #12) Remove the 'start' tag from the new '0 - Deploy/Update a Server'. As admin user, run that template with the following extra variable added:
 
@@ -69,23 +54,15 @@
   delegate_to: "{{ awx_server }}"
   fetch:
     src: "/var/lib/awx/projects/clients/{{ member_id }}/{{ new_subscription_id }}/extra_vars.json"
-    dest: "/tmp/{{ matrix_domain }}-new_extra_vars.json"
+    dest: "/tmp/{{ matrix_domain }}_new_extra_vars.json"
     flat: yes
   when: lock_file_5.stat.exists == false
 
 #modify it
 
-#{
-#  "matrix_domain": "gomatrixhostingforever.xyz",
-#  "target": "matrix.gomatrixhostingforever.xyz",
-#  "matrix_awx_enabled": "true",
-#  "plan_title": "Micro On-Premises Server",
-#  "subscription_id": "T-W3XYUTLK1RWE",
-#  "member_id": "billy.bob"
-#}
 - name: Update 'new_extra_vars.json' file to include SSL disabler
   lineinfile:
-    path: '/tmp/{{ matrix_domain }}-new_extra_vars.json'
+    path: '/tmp/{{ matrix_domain }}_new_extra_vars.json'
     create: no
     insertafter: '^{'
     line: '  "matrix_ssl_retrieval_method": "none",'
@@ -94,12 +71,11 @@
 
 #load it in with
 
-
 - name: Re-create 'Deploy/Update a Server' job template
   awx.awx.tower_job_template:
     name: "{{ matrix_domain }} - 0 - Deploy/Update a Server"
     description: "Creates a new matrix service with Spantaleev's playbooks"
-    extra_vars: "{{ lookup('file', '/tmp/{{ matrix_domain }}-new_extra_vars.json') }}"
+    extra_vars: "{{ lookup('file', '/tmp/{{ matrix_domain }}_new_extra_vars.json') }}"
     job_type: run
     job_tags: "setup-all"
     inventory: "{{ member_id }}"
@@ -124,7 +100,7 @@
   when: lock_file_5.stat.exists == false
   register: deploy_job
 
-- name: Wait for job max 900s (15m)
+- name: Wait for deploy job max 900s (15m)
   awx.awx.tower_job_wait:
     job_id: "{{ deploy_job.id }}"
     timeout: 900

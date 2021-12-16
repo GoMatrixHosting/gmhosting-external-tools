@@ -27,9 +27,14 @@
   register: subscription_backup_directory
   when: lock_file_4.stat.exists == false
 
+- name: Collect current datetime
+  set_fact:
+    awx_datetime: "{{ lookup('pipe', 'date +%Y-%m-%d_%H:%M') }}"
+  when: lock_file_4.stat.exists == false
+
 - name: Move the subscriptions backup directory if unmoved
   delegate_to: "{{ backup_server }}"
-  command: mv "{{ backup_directory }}/Clients/{{ matrix_domain }}" "{{ backup_directory }}/Clients/{{ matrix_domain }}-old"
+  command: mv "{{ backup_directory }}/Clients/{{ matrix_domain }}" "{{ backup_directory }}/Clients/{{ matrix_domain }}_{{ awx_datetime }}"
   when: ( subscription_backup_directory.stat.exists is defined ) and ( subscription_backup_directory.stat.exists ) and ( lock_file_4.stat.exists == false )
 
 
@@ -49,22 +54,20 @@
 
 - name: Include 'new_subscription_id' variables from '{{ matrix_domain }}.yml'
   include_vars:
-    file: './inventory/{{ matrix_domain }}.yml'
+    file: '/tmp/{{ matrix_domain }}.yml'
   when: matrix_domain_file.stat.exists
 
 - name: Template new 'provision_server_extra-vars.json' variable file
   template:
-    src: './extra-vars/digitalocean_provision_server_extra-vars.json.j2'
+    src: './templates/digitalocean_provision_server_extra-vars.json.j2'
     dest: '/tmp/{{ matrix_domain }}_provision_server_extra-vars.json'
-  when: ( subscription_type == "digitalocean" ) and ( lock_file_4.stat.exists == false )
+  when: ( new_subscription_type == "digitalocean" ) and ( lock_file_4.stat.exists == false )
 
 - name: Template new 'provision_server_extra-vars.json' variable file
   template:
-    src: './extra-vars/on_premises_provision_server_extra-vars.json.j2'
+    src: './templates/on_premises_provision_server_extra-vars.json.j2'
     dest: '/tmp/{{ matrix_domain }}_provision_server_extra-vars.json'
-  when: ( subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
-
-
+  when: ( new_subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
 
 - name: Add server_ipv4 line to provision_server_extra-vars.json
   delegate_to: 127.0.0.1
@@ -75,8 +78,8 @@
     mode: '0600'
     state: present
   with_dict:
-    'server_ipv4': '{{ server_ipv4 }}'
-  when: ( server_ipv4 is defined ) and ( server_ipv4 | trim | length > 0 ) and ( subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
+    'server_ipv4': '{{ new_server_ipv4 }}'
+  when: ( new_server_ipv4 is defined ) and ( new_server_ipv4 | trim | length > 0 ) and ( new_subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
 
 - name: Add server_ipv6 line to provision_server_extra-vars.json
   delegate_to: 127.0.0.1
@@ -87,10 +90,10 @@
     mode: '0600'
     state: present
   with_dict:
-    'server_ipv6': '{{ server_ipv6 }}'
-  when: ( server_ipv6 is defined ) and ( server_ipv6 | trim | length > 0 ) and ( subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
+    'server_ipv6': '{{ new_server_ipv6 }}'
+  when: ( new_server_ipv6 is defined ) and ( new_server_ipv6 | trim | length > 0 ) and ( new_subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
 
-- name: Remove imposter-check tag from 'Provision a New Server' job template
+- name: Remove imposter-check tag from new 'Provision a New Server' job template
   awx.awx.tower_job_template:
     name: "0 - {{ new_subscription_id }} - Provision a New Server"
     description: "Creates digitalocean droplet and space, performs initial setup, adds relevant playbooks to users account."
@@ -101,19 +104,18 @@
     playbook: setup.yml
     credential: "{{ member_id }} - AWX SSH Key"
     survey_enabled: false
-    #survey_spec: "{{ lookup('file', '/tmp/{{ matrix_domain }}_provision_survey_digitalocean.json') }}"
     state: present
     verbosity: 1
     job_tags: setup-firewall, setup-mailgun, setup-export, setup-backup
-    skip_tags: digitalocean-space
+    skip_tags: digitalocean-space, imposter-check
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
-  when: ( subscription_type == "digitalocean" ) and ( lock_file_4.stat.exists == false )
+  when: ( new_subscription_type == "digitalocean" ) and ( lock_file_4.stat.exists == false )
 
-- name: Remove imposter-check tag from 'Provision a New Server' job template
+- name: Remove imposter-check tag from new 'Provision a New Server' job template
   awx.awx.tower_job_template:
-    name: "0 - {{ subscription_id }} - Provision a New Server"
+    name: "0 - {{ new_subscription_id }} - Provision a New Server"
     description: "Connects existing server, performs initial setup, adds relevant playbooks to users account."
     extra_vars: "{{ lookup('file', '/tmp/{{ matrix_domain }}_provision_server_extra-vars.json') }}"
     job_type: run
@@ -122,7 +124,6 @@
     playbook: setup.yml
     credential: "{{ member_id }} - AWX SSH Key"
     survey_enabled: false
-    #survey_spec: "{{ lookup('file', '/tmp/{{ matrix_domain }}_provision_survey_on-premises.json') }}"
     state: present
     verbosity: 1
     job_tags: setup-firewall, setup-mailgun, setup-export, setup-backup
@@ -130,7 +131,7 @@
     tower_host: "https://{{ awx_host }}"
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
-  when: ( subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
+  when: ( new_subscription_type == "on_premises" ) and ( lock_file_4.stat.exists == false )
 
 - name: Disallow team from executing the new 'Provision a New Server' job_template
   awx.awx.tower_role:
@@ -165,7 +166,7 @@
   when: lock_file_4.stat.exists == false
   register: provision_job_1
 
-- name: Wait for job max 900s (15m)
+- name: Wait for provision job max 900s (15m)
   awx.awx.tower_job_wait:
     job_id: "{{ provision_job_1.id }}"
     timeout: 900
@@ -173,6 +174,68 @@
     tower_oauthtoken: "{{ awx_session_token.ansible_facts.tower_token.token }}"
     validate_certs: yes
   when: lock_file_4.stat.exists == false
+
+- name: Fetch new server_vars.yml file to collect the IP address generated during provision. 
+  delegate_to: "{{ awx_server }}"
+  fetch:
+    src: "/var/lib/awx/projects/clients/{{ member_id }}/{{ new_subscription_id }}/server_vars.yml"
+    dest: "/tmp/{{ matrix_domain }}_new_server_vars.yml"
+    flat: yes
+  when: ( new_subscription_type == "digitalocean" ) and ( lock_file_4.stat.exists == false )
+
+- name: Change IP variable names in fetched file to include 'new_do_'
+  command: |
+    sed -i 's/server_/new_do_server_/' /tmp/{{ matrix_domain }}_new_server_vars.yml
+  when: ( new_subscription_type == "digitalocean" ) and ( lock_file_4.stat.exists == false )
+
+- name: Include new_server_vars.yml variable file
+  include_vars: "/tmp/{{ matrix_domain }}_new_server_vars.yml"
+  when: ( new_subscription_type == "digitalocean" )
+
+- name: Set server_ip_final if both IPv4 and IPv6 are defined. [digitalocean]
+  delegate_to: 127.0.0.1
+  set_fact:
+    server_ip_final: '{{ new_do_server_ipv4 }}'
+  when: ( new_do_server_ipv4 | length > 0 ) and ( new_do_server_ipv6 | length > 0 ) and ( new_subscription_type == "digitalocean" )
+
+- name: Set server_ip_final if only IPv4 is defined. [digitalocean]
+  delegate_to: 127.0.0.1
+  set_fact:
+    server_ip_final: '{{ new_do_server_ipv4 }}'
+  when: ( new_do_server_ipv4 | length > 0 ) and ( new_do_server_ipv6 | length == 0 ) and ( new_subscription_type == "digitalocean" )
+
+- name: Set server_ip_final if only IPv6 is defined. [digitalocean]
+  delegate_to: 127.0.0.1
+  set_fact:
+    server_ip_final: '{{ new_do_server_ipv6 }}'
+  when: ( new_do_server_ipv4 | length == 0 ) and ( new_do_server_ipv6 | length > 0 ) and ( new_subscription_type == "digitalocean" )
+
+- name: Set server_ip_final if both IPv4 and IPv6 are defined. [on-premises]
+  delegate_to: 127.0.0.1
+  set_fact:
+    server_ip_final: '{{ new_server_ipv4 }}'
+  when: ( new_server_ipv4 | length > 0 ) and ( new_server_ipv6 | length > 0 ) and ( new_subscription_type == "on_premises" )
+
+- name: Set server_ip_final if only IPv4 is defined. [on-premises]
+  delegate_to: 127.0.0.1
+  set_fact:
+    server_ip_final: '{{ new_server_ipv4 }}'
+  when: ( new_server_ipv4 | length > 0 ) and ( new_server_ipv6 | length == 0 ) and ( new_subscription_type == "on_premises" )
+
+- name: Set server_ip_final if only IPv6 is defined. [on-premises]
+  delegate_to: 127.0.0.1
+  set_fact:
+    server_ip_final: '{{ new_server_ipv6 }}'
+  when: ( new_server_ipv4 | length == 0 ) and ( new_server_ipv6 | length > 0 ) and ( new_subscription_type == "on_premises" )
+
+- name: Add server_ip_final to '{{ matrix_domain }}.yml'
+  lineinfile:
+    path: '/tmp/{{ matrix_domain }}.yml'
+    create: yes
+    regexp: '^server_ip_final: .*'
+    line: 'server_ip_final: {{ server_ip_final }}'
+    mode: '0600'
+  when: ( server_ip_final is defined ) and ( server_ip_final | length > 0 )
 
 - name: Create lock_file_4
   file:

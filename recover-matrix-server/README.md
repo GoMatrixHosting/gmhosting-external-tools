@@ -4,24 +4,14 @@
 Used to recover a Matrix server connected to AWX. This tool should be run outside of AWX.
 
 
-# Instructions:
+## Instructions:
 
-1) On the controller create a SSH config entry for the old servers IP:
-```
-Host 128.199.235.90
-    HostName 128.199.235.90
-    User root
-    Port 22
-    IdentityFile ~/.ssh/matrixtesting6_ed25519
-    IdentitiesOnly=yes
-```
+1) Edit the variables in `./inventory/hosts/localhost/vars.yml` for this recovery job.
 
-2) Edit the variables in `./inventory/hosts/localhost/vars.yml` for this recovery job.
+2) List borg backups for that server:
+`$ ansible-playbook -v -i ./inventory/hosts --extra-vars 'matrix_domain="aveng.xyz" view_borg_backup="true"' recover_matrix_server.yml`
 
-3) List borg backups for that server:
-`$ ansible-playbook -v -i ./inventory/hosts --extra-vars "view_borg_backup=true" recover_server_1.yml`
-
-4) Observe the output, if you don't want the latest backup to be restored then copy the lines you want to recover:
+3) Observe the output, if you don't want the latest backup to be restored then copy the lines you want to recover:
 
 ```
 TASK [recover-matrix-server : Print borg backup history for /matrix] ***********************************************************************************************************
@@ -45,27 +35,93 @@ ok: [localhost] => {
 }
 ```
 
-5A) Run the playbook and recover the latest backup (made after the servers shutdown by this playbook):
-`$ ansible-playbook -v -i ./inventory/hosts recover_server_1.yml`
 
-5B) Run the playbook and recover a specific backup:
+4A) Run the playbook and recover the latest backup (made after the servers shutdown by this playbook):
+
+Need to include:
+```
+matrix_domain
+new_plan_title <see below>
+AND
+new_do_droplet_region_long <see below>
+OR
+new_server_ipv4
+new_server_ipv6
+```
+Optionally you can change the member_id by specifying it:
+```
+member_id
+```
+Possible new_plan_title titles:
+```
+Micro DigitalOcean Server
+Small DigitalOcean Server
+Medium DigitalOcean Server
+Large DigitalOcean Server
+Jumbo 500 DigitalOcean Server
+Jumbo 1000 DigitalOcean Server
+Jumbo 2000 DigitalOcean Server
+Jumbo 5000 DigitalOcean Server
+Micro On-Premises Server
+Small On-Premises Server
+Medium On-Premises Server
+Large On-Premises Server
+Jumbo 500 On-Premises Server
+Jumbo 1000 On-Premises Server
+Jumbo 2000 On-Premises Server
+Jumbo 5000 On-Premises Server
+```
+Possible new_do_droplet_region_long values:
+```
+New York City (USA)
+San Francisco (USA)
+Amsterdam (NLD)
+Frankfurt (DEU)
+Singapore (SGP)
+London (GBR)
+Toronto (CAN)
+Balgalore (IND)
+```
+
+Example, recover to DO with the same member_id:
 ```
 $ ansible-playbook -v -i ./inventory/hosts \
---extra-vars 'borg_backup_matrix_input="T-6HAX1LZIJHX9-aveng-2021-11-20T10:23:46 Sat, 2021-11-20 18:23:51 [01075b0015a7c1aff02e511fdacabc7d4ed73d4cd7e0f7d61788cc405257733b]" \
-borg_backup_database_input="T-6HAX1LZIJHX9-aveng-2021-11-20T10:24:12 Sat, 2021-11-20 18:24:17 [9d2ffcb1c878b60619d6871c72ee04542077a6c31232ccd0e91300705e607bb7]"' \
-recover_server_1.yml
+--extra-vars 'matrix_domain="aveng.xyz" \
+new_plan_title="Micro DigitalOcean Server" \
+new_do_droplet_region_long="New York City (USA)"' \
+recover_matrix_server.yml
 ```
 
-6) Alter the DNS record and wait for it to propagate.
+Example, recover to OP and change member_id:
+```
+ansible-playbook -v -i ./inventory/hosts \
+--extra-vars 'matrix_domain="aveng.xyz" \
+member_id="65" \
+new_plan_title="Micro On-Premises Server" \
+new_server_ipv4="188.166.223.116"' \
+recover_matrix_server.yml
+```
+
+4B) Run the playbook and recover a specific backup:
+```
+$ ansible-playbook -v -i ./inventory/hosts \
+--extra-vars 'matrix_domain="aveng.xyz" \
+new_plan_title="Small DigitalOcean Server" \
+new_do_droplet_region_long="New York City (USA)"' \
+borg_backup_matrix_input="T-6HAX1LZIJHX9-aveng-2021-11-20T10:23:46 Sat, 2021-11-20 18:23:51 [01075b0015a7c1aff02e511fdacabc7d4ed73d4cd7e0f7d61788cc405257733b]" \
+borg_backup_database_input="T-6HAX1LZIJHX9-aveng-2021-11-20T10:24:12 Sat, 2021-11-20 18:24:17 [9d2ffcb1c878b60619d6871c72ee04542077a6c31232ccd0e91300705e607bb7]"' \
+recover_matrix_server.yml
+```
 
 
-7) Run the new '0 - Deploy/Update a Server' job template again, then try and login.
+5) Alter the DNS record and wait for it to propagate.
 
 
-8) If the new Matrix server works delete the old subscription with '00 - Ansible Delete Subscription', then re-provision the new subscription using 'Provision a New Server'.
+6A) Run the playbook and raise and test the new server, then finally delete the old server and subscription:
+`$ ansible-playbook -v -i ./inventory/hosts --extra-vars 'matrix_domain="aveng.xyz"' raise_matrix_server.yml`
 
-
-9) If base domain isn't used (if matrix_nginx_proxy_base_domain_serving_enabled: true) then run the 'Configure Website + Access Export' job template again to enable the base domain site.
+6B) If you're expecting the self-check to fail add this extra variable to skip it (dangerous):
+`$ ansible-playbook -v -i ./inventory/hosts --extra-vars 'matrix_domain="aveng.xyz" skip_self_check="true"' raise_matrix_server.yml`
 
 
 # Starting again:
@@ -86,14 +142,3 @@ $ ls /tmp/gomatrixhostingisawesome.xyz*
 /tmp/gomatrixhostingisawesome.xyz_lock_2           /tmp/gomatrixhostingisawesome.xyz-server_vars.yml
 $ rm /tmp/gomatrixhostingisawesome.xyz*
 ```
-3) delete the domains inventory file:
-```
-/recover-matrix-server$ rm ./inventory/gomatrixhostingisawesome.xyz.yml
-```
-
-
-# Issues:
-
-- regenerated digitalocean servers use the same server name!! [fixed]
-- how should on-premises servers be recovered?
-

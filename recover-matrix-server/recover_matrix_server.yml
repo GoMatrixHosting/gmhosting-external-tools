@@ -1,0 +1,7 @@
+---
+- name: "Recovers a Matrix server to a new subscription in AWX."
+  hosts: localhost
+  gather_facts: true
+
+  roles:
+    - recover-matrix-server

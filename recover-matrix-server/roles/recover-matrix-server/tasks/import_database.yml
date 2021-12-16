@@ -16,7 +16,7 @@
 #bash-5.1$ createdb --template=template0 --encoding=UTF8 --locale=C synapse
 
 - name: Delete and re-create existing databases
-  delegate_to: "{{ server_ipv4 }}"
+  delegate_to: "{{ server_ip_final }}"
   command: "{{ item }}"
   with_items:
     - docker exec -it matrix-postgres /bin/bash -c 'dropdb -f matrix'
@@ -50,18 +50,17 @@
 # collect   "server_path_postgres_dump": "/chroot/export/postgres_2021-03-02.sql.gz"
 
 - name: Collect list of postgresql dumps, with the most recent being listed first
-  delegate_to: "{{ server_ipv4 }}"
+  delegate_to: "{{ server_ip_final }}"
   command: |
     ls -r1 /chroot/export/
   when: lock_file_7.stat.exists == false
   register: server_path_postgres_dump
 
-
 # template it
 
 - name: Save new 'Provision Server' survey.json to the AWX tower, template
   template:
-    src: './extra-vars/restore-and-import-postgresql-dump.json.j2'
+    src: './templates/restore-and-import-postgresql-dump.json.j2'
     dest: '/tmp/{{ matrix_domain }}_restore-and-import-postgresql-dump.json'
   when: lock_file_7.stat.exists == false
 
@@ -95,7 +94,7 @@
   when: lock_file_7.stat.exists == false
   register: import_job
 
-- name: Wait for job max 900s (15m)
+- name: Wait for import job max 900s (15m)
   awx.awx.tower_job_wait:
     job_id: "{{ import_job.id }}"
     timeout: 900
