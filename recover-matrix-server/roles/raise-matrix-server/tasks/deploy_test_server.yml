@@ -26,7 +26,7 @@
     description: "Creates a new matrix service with Spantaleev's playbooks"
     extra_vars: "{{ lookup('file', '/tmp/{{ matrix_domain }}_new_extra_vars.json') }}"
     job_type: run
-    job_tags: "setup-nginx-proxy,start"
+    job_tags: "setup-nginx-proxy,setup-coturn,start"
     inventory: "{{ member_id }}"
     project: "{{ member_id }} - Matrix Docker Ansible Deploy"
     playbook: setup.yml
