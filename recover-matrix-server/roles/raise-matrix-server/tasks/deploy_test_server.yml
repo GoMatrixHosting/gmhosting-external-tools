@@ -18,7 +18,7 @@
   when: lock_file_9.stat.exists == false
 
 - name: Include new extra_vars variable file
-  include_vars: "/tmp/urgin.xyz_new_extra_vars.json"
+  include_vars: "/tmp/{{ matrix_domain }}_new_extra_vars.json"
 
 - name: Update 'Deploy/Update a Server' job template
   awx.awx.tower_job_template:
